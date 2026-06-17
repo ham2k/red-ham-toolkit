@@ -646,27 +646,28 @@ module.exports = function (RED) {
 
                     // ------ Zoom reset button (shown only when zoom != default) ------
                     if (Math.abs($scope.zoom - $scope.defaultZoom) > 0.01) {
-                        var btnW = 90, btnH = 22, btnX = W - btnW - 6, btnY = H - btnH - 6;
+                        var btnSize = 26, btnX = W - btnSize - 6, btnY = H - btnSize - 6;
                         var btnG = svg.append('g')
                             .style('cursor', 'pointer')
                             .on('click', function (event) {
                                 event.stopPropagation();
                                 requestZoomTo($scope.defaultZoom);
                             });
+                        btnG.append('title')
+                            .text('Zoom: ' + $scope.zoom.toFixed(2) + '× (click to reset to ' + $scope.defaultZoom.toFixed(2) + '×)');
                         btnG.append('rect')
                             .attr('x', btnX).attr('y', btnY)
-                            .attr('width', btnW).attr('height', btnH)
+                            .attr('width', btnSize).attr('height', btnSize)
                             .attr('rx', 4)
-                            .style('fill', 'rgba(0,0,0,0.55)');
+                            .style('fill', 'rgba(' + hr + ',' + hg + ',' + hb + ',' + hudBgAlpha + ')');
                         btnG.append('text')
-                            .attr('x', btnX + btnW / 2).attr('y', btnY + btnH / 2 + 1)
+                            .attr('x', btnX + btnSize / 2).attr('y', btnY + btnSize / 2 + 1)
                             .attr('text-anchor', 'middle')
                             .attr('dominant-baseline', 'middle')
-                            .attr('font-size', '11px')
-                            .attr('font-family', 'sans-serif')
-                            .style('fill', '#eee')
+                            .attr('font-size', '16px')
+                            .style('fill', C.aligned)
                             .style('pointer-events', 'none')
-                            .text('↺ Reset zoom');
+                            .text('↺');
                     }
                 };
 
