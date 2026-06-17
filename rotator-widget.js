@@ -37,14 +37,32 @@ module.exports = function (RED) {
             return (value && HEX_RE.test(value)) ? value : fallback;
         }
         var colors = {
-            ocean:   safeColor(config.colorOcean,   '#afd4ee'),
-            land:    safeColor(config.colorLand,    '#8dbf6a'),
-            current: safeColor(config.colorCurrent, '#1155cc'),
-            target:  safeColor(config.colorTarget,  '#cc2200'),
-            aligned: safeColor(config.colorAligned, '#111111')
+            ocean:        safeColor(config.colorOcean,        '#afd4ee'),
+            land:         safeColor(config.colorLand,         '#8dbf6a'),
+            landOutline:  safeColor(config.colorLandOutline,  '#4a5e38'),
+            current:      safeColor(config.colorCurrent,      '#1155cc'),
+            target:       safeColor(config.colorTarget,       '#cc2200'),
+            aligned:      safeColor(config.colorAligned,      '#111111'),
+            equator:      safeColor(config.colorEquator,      '#ffffff'),
+            tropics:      safeColor(config.colorTropics,      '#ddcc44'),
+            polarCircles: safeColor(config.colorPolarCircles, '#44aadd')
         };
-        // Serialise as a JS object literal embedded in the ng-init call
-        var colorsJson = JSON.stringify(colors);
+        var latLineWidth = Math.max(0.2, Math.min(5, parseFloat(config.latLineWidth) || 0.8));
+
+        // Build a JS object literal using single quotes so it embeds safely inside
+        // the double-quoted ng-init HTML attribute (JSON.stringify would break it).
+        // Values are already validated as #rrggbb so no escaping is needed.
+        var colorsLiteral = '{' +
+            "ocean:'"        + colors.ocean        + "'," +
+            "land:'"         + colors.land         + "'," +
+            "landOutline:'"  + colors.landOutline  + "'," +
+            "current:'"      + colors.current      + "'," +
+            "target:'"       + colors.target       + "'," +
+            "aligned:'"      + colors.aligned      + "'," +
+            "equator:'"      + colors.equator      + "'," +
+            "tropics:'"      + colors.tropics      + "'," +
+            "polarCircles:'" + colors.polarCircles + "'" +
+        '}';
 
         var widgetCleanup = ui.addWidget({
             node: node,
@@ -56,7 +74,7 @@ module.exports = function (RED) {
             label:  config.label,
 
             format: '<div style="width:100%;height:100%;padding:0;margin:0;box-sizing:border-box;"' +
-                    ' ng-init="init(\'' + safeQth + '\',' + safeCurrent + ',' + safeTarget + ',' + colorsJson + ')">' +
+                    ' ng-init="init(\'' + safeQth + '\',' + safeCurrent + ',' + safeTarget + ',' + colorsLiteral + ',' + latLineWidth + ')">' +
                     '<svg id="rotator-{{$id}}" style="display:block;width:100%;height:100%;overflow:visible;"></svg>' +
                     '</div>',
 
@@ -144,23 +162,27 @@ module.exports = function (RED) {
                 $scope.currentAzimuth = 0;
                 $scope.targetAzimuth  = 0;
                 $scope.colors = {
-                    ocean:   '#afd4ee',
-                    land:    '#8dbf6a',
-                    current: '#1155cc',
-                    target:  '#cc2200',
-                    aligned: '#111111'
+                    ocean:        '#afd4ee',
+                    land:         '#8dbf6a',
+                    landOutline:  '#4a5e38',
+                    current:      '#1155cc',
+                    target:       '#cc2200',
+                    aligned:      '#111111',
+                    equator:      '#ffffff',
+                    tropics:      '#ddcc44',
+                    polarCircles: '#44aadd'
                 };
+                $scope.latLineWidth = 0.8;
 
                 // ----------------------------------------------------------
                 // Called by ng-init with values from node config
                 // ----------------------------------------------------------
-                $scope.init = function (qth, currentAz, targetAz, colors) {
+                $scope.init = function (qth, currentAz, targetAz, colors, latLineWidth) {
                     $scope.qth            = qth || 'JJ00';
                     $scope.currentAzimuth = parseFloat(currentAz) || 0;
                     $scope.targetAzimuth  = parseFloat(targetAz)  || 0;
-                    if (colors && typeof colors === 'object') {
-                        $scope.colors = colors;
-                    }
+                    if (colors && typeof colors === 'object') { $scope.colors = colors; }
+                    if (latLineWidth) { $scope.latLineWidth = parseFloat(latLineWidth); }
 
                     Promise.all([
                         loadScript('https://cdn.jsdelivr.net/npm/d3@7/dist/d3.min.js',
@@ -236,47 +258,72 @@ module.exports = function (RED) {
                             .attr('orient', 'auto')
                             .append('path')
                             .attr('d', 'M0,-4L8,0L0,4Z')
-                            .attr('fill', color);
+                            .style('fill', color)
+                            .style('stroke', 'none');
                     }
 
                     var C = $scope.colors;
 
+                    // NOTE: All fills and strokes on <path> elements use .style() not .attr()
+                    // because the dashboard has a global CSS rule that sets a default fill on
+                    // all SVG paths. Inline styles (.style) beat stylesheet rules; attributes
+                    // (.attr) do not.
+
                     // ------ Ocean background ------
                     svg.append('circle')
                         .attr('cx', cx).attr('cy', cy).attr('r', radius)
-                        .attr('fill', C.ocean)
-                        .attr('stroke', '#333')
-                        .attr('stroke-width', 1.5);
+                        .style('fill', C.ocean)
+                        .style('stroke', '#333')
+                        .style('stroke-width', '1.5px');
 
                     var mapG = svg.append('g').attr('clip-path', 'url(#' + clipId + ')');
 
-                    // Graticule (10° grid) – slightly lighter than ocean
-                    mapG.append('path')
-                        .datum(d3.geoGraticule()())
+                    // Land fill – render each country individually to avoid SVG winding-rule
+                    // issues that arise when using the merged objects.land MultiPolygon.
+                    var countries = topojson.feature($scope.worldData, $scope.worldData.objects.countries);
+                    mapG.selectAll('.country')
+                        .data(countries.features)
+                        .enter().append('path')
+                        .attr('class', 'country')
                         .attr('d', pathGen)
-                        .attr('fill', 'none')
-                        .attr('stroke', C.ocean)
-                        .attr('stroke-opacity', 0.5)
-                        .attr('stroke-width', 0.6);
+                        .style('fill', C.land)
+                        .style('stroke', C.landOutline)
+                        .style('stroke-width', '0.5px');
 
-                    // Land
-                    mapG.append('path')
-                        .datum(topojson.feature($scope.worldData, $scope.worldData.objects.land))
-                        .attr('d', pathGen)
-                        .attr('fill', C.land);
+                    // Country borders (shared edges only) – only when large enough to read
+                    if (radius > 120) {
+                        mapG.append('path')
+                            .datum(topojson.mesh(
+                                $scope.worldData,
+                                $scope.worldData.objects.countries,
+                                function (a, b) { return a !== b; }
+                            ))
+                            .attr('d', pathGen)
+                            .style('fill', 'none')
+                            .style('stroke', C.landOutline)
+                            .style('stroke-width', '0.3px');
+                    }
 
-                    // Country borders – darker shade of land color
-                    mapG.append('path')
-                        .datum(topojson.mesh(
-                            $scope.worldData,
-                            $scope.worldData.objects.countries,
-                            function (a, b) { return a !== b; }
-                        ))
-                        .attr('d', pathGen)
-                        .attr('fill', 'none')
-                        .attr('stroke', C.land)
-                        .attr('stroke-opacity', 0.5)
-                        .attr('stroke-width', 0.6);
+                    // Significant latitude lines – drawn after land so they show on both ocean and land
+                    var W = $scope.latLineWidth;
+                    var latLines = [
+                        { lat:   0,    color: C.equator,      dash: null,  width: W * 1.2 },  // Equator
+                        { lat:  23.5,  color: C.tropics,      dash: '5,3', width: W },         // Tropic of Cancer
+                        { lat: -23.5,  color: C.tropics,      dash: '5,3', width: W },         // Tropic of Capricorn
+                        { lat:  66.5,  color: C.polarCircles, dash: '3,3', width: W },         // Arctic Circle
+                        { lat: -66.5,  color: C.polarCircles, dash: '3,3', width: W }          // Antarctic Circle
+                    ];
+                    latLines.forEach(function (l) {
+                        var coords = [];
+                        for (var lon = -180; lon <= 180; lon += 2) { coords.push([lon, l.lat]); }
+                        var line = mapG.append('path')
+                            .datum({ type: 'LineString', coordinates: coords })
+                            .attr('d', pathGen)
+                            .style('fill', 'none')
+                            .style('stroke', l.color)
+                            .style('stroke-width', l.width + 'px');
+                        if (l.dash) line.style('stroke-dasharray', l.dash);
+                    });
 
                     // ------ Degree tick marks ------
                     for (var deg = 0; deg < 360; deg += 10) {
