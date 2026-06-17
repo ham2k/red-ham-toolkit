@@ -30,6 +30,11 @@
         <input type="number" id="node-input-targetAzimuth" min="0" max="359" step="1"
                placeholder="0" style="width:6em;"> &deg;
     </div>
+    <div class="form-row">
+        <label for="node-input-beamWidth"><i class="fa fa-arrows-h"></i> Beam width</label>
+        <input type="number" id="node-input-beamWidth" min="0" max="180" step="1"
+               placeholder="30" style="width:5em;"> &deg;
+    </div>
     <hr/>
     <div class="form-row">
         <label style="width:140px;" for="node-input-colorCurrent"><i class="fa fa-location-arrow"></i> Current az. color</label>
@@ -174,7 +179,8 @@
             colorPolarCircles:    { value: '#555555' },
             opacityPolarCircles:  { value: 55 },
             latLineWidth:         { value: 0.4 },
-            defaultZoom:          { value: 1.0 }
+            defaultZoom:          { value: 1.0 },
+            beamWidth:            { value: 30 }
         },
         inputs:  1,
         outputs: 1,

@@ -94,6 +94,7 @@ module.exports = function (RED) {
         };
         var latLineWidth = Math.max(0.2, Math.min(5, parseFloat(config.latLineWidth) || 0.4));
         var defaultZoom  = Math.max(1.0, Math.min(20, parseFloat(config.defaultZoom)  || 1.0));
+        var beamWidth    = Math.max(0,   Math.min(180, parseFloat(config.beamWidth)   || 30));
 
         // Build a JS object literal using single quotes so it embeds safely inside
         // the double-quoted ng-init HTML attribute (JSON.stringify would break it).
@@ -129,7 +130,7 @@ module.exports = function (RED) {
             label:  config.label,
 
             format: '<div style="width:100%;height:100%;padding:0;margin:0;box-sizing:border-box;"' +
-                    ' ng-init="init(\'' + safeQth + '\',' + safeCurrent + ',' + safeTarget + ',' + colorsLiteral + ',' + latLineWidth + ',' + defaultZoom + ')">' +
+                    ' ng-init="init(\'' + safeQth + '\',' + safeCurrent + ',' + safeTarget + ',' + colorsLiteral + ',' + latLineWidth + ',' + defaultZoom + ',' + beamWidth + ')">' +
                     '<svg id="rotator-{{$id}}" style="display:block;width:100%;height:100%;overflow:visible;"></svg>' +
                     '</div>',
 
@@ -298,11 +299,12 @@ module.exports = function (RED) {
                     graticuleOpacity:    40
                 };
                 $scope.latLineWidth = 0.4;
+                $scope.beamWidth    = 30;
 
                 // ----------------------------------------------------------
                 // Called by ng-init with values from node config
                 // ----------------------------------------------------------
-                $scope.init = function (qth, currentAz, targetAz, colors, latLineWidth, defaultZoom) {
+                $scope.init = function (qth, currentAz, targetAz, colors, latLineWidth, defaultZoom, beamWidth) {
                     $scope.qth            = qth || 'JJ00';
                     $scope.currentAzimuth = parseFloat(currentAz) || 0;
                     $scope.targetAzimuth  = parseFloat(targetAz)  || 0;
@@ -312,6 +314,7 @@ module.exports = function (RED) {
                         $scope.defaultZoom = parseFloat(defaultZoom);
                         $scope.zoom        = $scope.defaultZoom;
                     }
+                    if (beamWidth != null) { $scope.beamWidth = parseFloat(beamWidth); }
 
                     Promise.all([
                         loadScript('https://cdn.jsdelivr.net/npm/d3@7/dist/d3.min.js',
@@ -534,6 +537,49 @@ module.exports = function (RED) {
                     }
 
                     var lineR = radius - 6; // slightly short so arrow head is inside circle
+
+                    // ------ Beam width wedge ------
+                    if ($scope.beamWidth > 0) {
+                        var bw       = $scope.beamWidth;
+                        var beamColor = aligned ? C.aligned : C.current;
+                        var beamBaseOpacity = aligned ? C.alignedOpacity / 100 : C.currentOpacity / 100;
+                        var halfRad  = (bw / 2) * Math.PI / 180;
+                        var cRadBeam = $scope.currentAzimuth * Math.PI / 180;
+                        var leftRad  = cRadBeam - halfRad;
+                        var rightRad = cRadBeam + halfRad;
+                        var beamR = radius * 2;  // extends well past the circle; clip path trims it
+                        var x1 = cx + beamR * Math.sin(leftRad),  y1 = cy - beamR * Math.cos(leftRad);
+                        var x2 = cx + beamR * Math.sin(rightRad), y2 = cy - beamR * Math.cos(rightRad);
+                        var largeArc = bw >= 180 ? 1 : 0;
+
+                        var beamG = svg.append('g').attr('clip-path', 'url(#' + clipId + ')');
+
+                        // filled wedge
+                        beamG.append('path')
+                            .attr('d', 'M' + cx + ',' + cy +
+                                       ' L' + x1 + ',' + y1 +
+                                       ' A' + beamR + ',' + beamR + ' 0 ' + largeArc + ' 1 ' + x2 + ',' + y2 +
+                                       ' Z')
+                            .style('fill', beamColor)
+                            .style('fill-opacity', beamBaseOpacity * 0.2)
+                            .style('stroke', 'none');
+
+                        // left edge line
+                        beamG.append('line')
+                            .attr('x1', cx).attr('y1', cy)
+                            .attr('x2', x1).attr('y2', y1)
+                            .style('stroke', beamColor)
+                            .style('stroke-opacity', beamBaseOpacity * 0.25)
+                            .style('stroke-width', 1);
+
+                        // right edge line
+                        beamG.append('line')
+                            .attr('x1', cx).attr('y1', cy)
+                            .attr('x2', x2).attr('y2', y2)
+                            .style('stroke', beamColor)
+                            .style('stroke-opacity', beamBaseOpacity * 0.25)
+                            .style('stroke-width', 1);
+                    }
 
                     if (!aligned) {
                         // Target azimuth
