@@ -19,6 +19,11 @@ module.exports = function (RED) {
     }
     var ui = dashboardModule(RED);
 
+    // Serve the Ham2K logo from the package directory
+    RED.httpAdmin.get('/rotator-widget/ham2k-square.svg', function (req, res) {
+        res.sendFile(path.join(__dirname, 'ham2k-square.svg'));
+    });
+
     // ------------------------------------------------------------------
     // Server-side cache + proxy for the Natural Earth 50m admin-1 data.
     // The 110m dataset only has US states; 50m is global (~5 MB GeoJSON).
@@ -615,6 +620,15 @@ module.exports = function (RED) {
                     svg.append('circle').attr('cx', cx).attr('cy', cy).attr('r', 5)
                         .attr('fill', '#222').attr('stroke', 'white').attr('stroke-width', 1.5);
 
+                    // ------ Ham2K logo (bottom-right) ------
+                    var logoSize = 36;
+                    svg.append('image')
+                        .attr('href', '/rotator-widget/ham2k-square.svg')
+                        .attr('x', W - logoSize - 8)
+                        .attr('y', H - logoSize - 8)
+                        .attr('width', logoSize)
+                        .attr('height', logoSize);
+
                     // ------ HUD readout (top-left overlay) ------
                     var hudPad = 6, hudH = 30;
                     var hudBgColor = C.hudBg || '#000000';
@@ -692,7 +706,7 @@ module.exports = function (RED) {
 
                     // ------ Zoom reset button (shown only when zoom != default) ------
                     if (Math.abs($scope.zoom - $scope.defaultZoom) > 0.01) {
-                        var btnSize = 26, btnX = W - btnSize - 6, btnY = H - btnSize - 6;
+                        var btnSize = 26, btnX = W - btnSize - 6, btnY = 8;
                         var btnG = svg.append('g')
                             .style('cursor', 'pointer')
                             .on('click', function (event) {
