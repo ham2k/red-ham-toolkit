@@ -48,6 +48,7 @@ module.exports = function (RED) {
             polarCircles: safeColor(config.colorPolarCircles, '#888888')
         };
         var latLineWidth = Math.max(0.2, Math.min(5, parseFloat(config.latLineWidth) || 0.4));
+        var defaultZoom  = Math.max(1.0, Math.min(20, parseFloat(config.defaultZoom)  || 1.0));
 
         // Build a JS object literal using single quotes so it embeds safely inside
         // the double-quoted ng-init HTML attribute (JSON.stringify would break it).
@@ -74,7 +75,7 @@ module.exports = function (RED) {
             label:  config.label,
 
             format: '<div style="width:100%;height:100%;padding:0;margin:0;box-sizing:border-box;"' +
-                    ' ng-init="init(\'' + safeQth + '\',' + safeCurrent + ',' + safeTarget + ',' + colorsLiteral + ',' + latLineWidth + ')">' +
+                    ' ng-init="init(\'' + safeQth + '\',' + safeCurrent + ',' + safeTarget + ',' + colorsLiteral + ',' + latLineWidth + ',' + defaultZoom + ')">' +
                     '<svg id="rotator-{{$id}}" style="display:block;width:100%;height:100%;overflow:visible;"></svg>' +
                     '</div>',
 
@@ -161,7 +162,8 @@ module.exports = function (RED) {
                 $scope.qth            = 'JJ00';
                 $scope.currentAzimuth = 0;
                 $scope.targetAzimuth  = 0;
-                $scope.zoom = 1.0;  // projection scale multiplier; 1 = full globe
+                $scope.zoom        = 1.0;
+                $scope.defaultZoom = 1.0;
                 $scope.colors = {
                     ocean:        '#4a90c4',
                     land:         '#c8b89a',
@@ -178,12 +180,16 @@ module.exports = function (RED) {
                 // ----------------------------------------------------------
                 // Called by ng-init with values from node config
                 // ----------------------------------------------------------
-                $scope.init = function (qth, currentAz, targetAz, colors, latLineWidth) {
+                $scope.init = function (qth, currentAz, targetAz, colors, latLineWidth, defaultZoom) {
                     $scope.qth            = qth || 'JJ00';
                     $scope.currentAzimuth = parseFloat(currentAz) || 0;
                     $scope.targetAzimuth  = parseFloat(targetAz)  || 0;
                     if (colors && typeof colors === 'object') { $scope.colors = colors; }
                     if (latLineWidth) { $scope.latLineWidth = parseFloat(latLineWidth); }
+                    if (defaultZoom)  {
+                        $scope.defaultZoom = parseFloat(defaultZoom);
+                        $scope.zoom        = $scope.defaultZoom;
+                    }
 
                     Promise.all([
                         loadScript('https://cdn.jsdelivr.net/npm/d3@7/dist/d3.min.js',
@@ -438,10 +444,36 @@ module.exports = function (RED) {
                     // ------ Scroll wheel zoom ------
                     svg.on('wheel', function (event) {
                         event.preventDefault();
-                        var factor = event.deltaY < 0 ? 1.15 : 1 / 1.15;
+                        var factor = event.deltaY < 0 ? 1.04 : 1 / 1.04;
                         $scope.zoom = Math.max(1.0, Math.min(20, $scope.zoom * factor));
                         $scope.drawMap();
                     });
+
+                    // ------ Zoom reset button (shown only when zoom != default) ------
+                    if (Math.abs($scope.zoom - $scope.defaultZoom) > 0.01) {
+                        var btnW = 90, btnH = 22, btnX = W - btnW - 6, btnY = H - btnH - 6;
+                        var btnG = svg.append('g')
+                            .style('cursor', 'pointer')
+                            .on('click', function (event) {
+                                event.stopPropagation();
+                                $scope.zoom = $scope.defaultZoom;
+                                $scope.drawMap();
+                            });
+                        btnG.append('rect')
+                            .attr('x', btnX).attr('y', btnY)
+                            .attr('width', btnW).attr('height', btnH)
+                            .attr('rx', 4)
+                            .style('fill', 'rgba(0,0,0,0.55)');
+                        btnG.append('text')
+                            .attr('x', btnX + btnW / 2).attr('y', btnY + btnH / 2 + 1)
+                            .attr('text-anchor', 'middle')
+                            .attr('dominant-baseline', 'middle')
+                            .attr('font-size', '11px')
+                            .attr('font-family', 'sans-serif')
+                            .style('fill', '#eee')
+                            .style('pointer-events', 'none')
+                            .text('↺ Reset zoom');
+                    }
                 };
 
                 // ----------------------------------------------------------
