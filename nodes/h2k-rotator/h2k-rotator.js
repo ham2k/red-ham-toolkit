@@ -320,12 +320,24 @@ module.exports = function (RED) {
                     return { rect: rect, cx: W / 2, cy: H / 2, radius: radius };
                 }
 
-                // Convert client coords → SVG-local coords and set the target azimuth
+                // Convert client coords → SVG-local coords and act on the press:
+                // the zoom-reset button takes priority, otherwise set the target.
                 function selectTargetAt(clientX, clientY) {
                     var g = getSvgGeometry();
                     if (!g) return;
-                    var dx = (clientX - g.rect.left) - g.cx;
-                    var dy = (clientY - g.rect.top)  - g.cy;
+                    var localX = clientX - g.rect.left;
+                    var localY = clientY - g.rect.top;
+
+                    // Zoom reset button hit-test (if currently shown)
+                    var b = $scope._zoomBtnRect;
+                    if (b && localX >= b.x && localX <= b.x + b.w &&
+                            localY >= b.y && localY <= b.y + b.h) {
+                        requestZoomTo($scope.defaultZoom);
+                        return;
+                    }
+
+                    var dx = localX - g.cx;
+                    var dy = localY - g.cy;
                     if (Math.sqrt(dx * dx + dy * dy) > g.radius) return;
                     var az = (Math.atan2(dx, -dy) * 180 / Math.PI + 360) % 360;
                     $scope.targetAzimuth = Math.round(az);
@@ -750,14 +762,13 @@ module.exports = function (RED) {
                     }
 
                     // ------ Zoom reset button (shown only when zoom != default) ------
+                    // Hit-testing is done in the document-level mouseup handler
+                    // (see onMouseUp/selectTargetAt) so it keeps working while
+                    // frequent redraws replace the SVG element under the cursor.
                     if (Math.abs($scope.zoom - $scope.defaultZoom) > 0.01) {
                         var btnSize = 26, btnX = W - btnSize - 6, btnY = 8;
-                        var btnG = svg.append('g')
-                            .style('cursor', 'pointer')
-                            .on('click', function (event) {
-                                event.stopPropagation();
-                                requestZoomTo($scope.defaultZoom);
-                            });
+                        $scope._zoomBtnRect = { x: btnX, y: btnY, w: btnSize, h: btnSize };
+                        var btnG = svg.append('g').style('cursor', 'pointer');
                         btnG.append('title')
                             .text('Zoom: ' + $scope.zoom.toFixed(2) + '× (click to reset to ' + $scope.defaultZoom.toFixed(2) + '×)');
                         btnG.append('rect')
@@ -773,6 +784,8 @@ module.exports = function (RED) {
                             .style('fill', C.aligned)
                             .style('pointer-events', 'none')
                             .text('↺');
+                    } else {
+                        $scope._zoomBtnRect = null;
                     }
                 };
 
