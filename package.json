@@ -1,13 +1,13 @@
 {
-  "name": "node-red-contrib-rotator-widget",
+  "name": "@ham2k/red-ham-tools",
   "version": "0.1.0",
-  "description": "Antenna rotator widget for Node-RED Dashboard 1.0",
-  "keywords": ["node-red", "rotator", "antenna", "ham-radio", "azimuth"],
+  "description": "Ham radio tools for Node-RED Dashboard",
+  "keywords": ["node-red", "ham-radio", "rotator", "antenna", "azimuth"],
   "author": "",
   "license": "MIT",
   "node-red": {
     "nodes": {
-      "rotator-widget": "rotator-widget.js"
+      "h2k-rotator": "nodes/h2k-rotator/h2k-rotator.js"
     }
   },
   "peerDependencies": {

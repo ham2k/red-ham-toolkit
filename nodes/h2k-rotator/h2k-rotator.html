@@ -1,7 +1,7 @@
 <!-- ============================================================
      Node editor config panel
      ============================================================ -->
-<script type="text/x-red" data-template-name="rotator-widget">
+<script type="text/x-red" data-template-name="h2k-rotator">
     <div class="form-row">
         <label for="node-input-group"><i class="fa fa-table"></i> Group</label>
         <input type="text" id="node-input-group">
@@ -12,7 +12,7 @@
     </div>
     <div class="form-row">
         <label for="node-input-label"><i class="fa fa-tag"></i> Label</label>
-        <input type="text" id="node-input-label" placeholder="Ultimate Rotator">
+        <input type="text" id="node-input-label" placeholder="H2K Rotator">
     </div>
     <hr/>
     <div class="form-row">
@@ -109,7 +109,7 @@
 <!-- ============================================================
      Help text (shown in the Node-RED info panel)
      ============================================================ -->
-<script type="text/x-red" data-help-name="rotator-widget">
+<script type="text/x-red" data-help-name="h2k-rotator">
     <p>An antenna rotator widget for Node-RED Dashboard 1.0.</p>
     <p>Displays an azimuthal equidistant world map centred on your QTH with
        directional indicators for the current and target azimuths.</p>
@@ -147,7 +147,7 @@
      Node registration (runs in the Node-RED editor)
      ============================================================ -->
 <script type="text/javascript">
-    RED.nodes.registerType('rotator-widget', {
+    RED.nodes.registerType('h2k-rotator', {
         category:    'dashboard',
         color:       '#E2D96E',
         defaults: {
@@ -156,7 +156,7 @@
             order:          { value: 0 },
             width:          { value: 6 },
             height:         { value: 6 },
-            label:          { value: 'Ultimate Rotator' },
+            label:          { value: 'H2K Rotator' },
             qth:            { value: 'JJ00' },
             currentAzimuth: { value: 0 },
             targetAzimuth:  { value: 0 },
@@ -185,7 +185,7 @@
         inputs:  1,
         outputs: 1,
         icon:    'font-awesome/fa-compass',
-        label:   function () { return this.label || 'Ultimate Rotator'; },
+        label:   function () { return this.label || 'H2K Rotator'; },
 
         oneditprepare: function () {
             if (typeof RED.nodes.getType('ui_button') !== 'undefined') {

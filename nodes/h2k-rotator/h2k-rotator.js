@@ -14,14 +14,14 @@ function loadDashboard(RED) {
 module.exports = function (RED) {
     var dashboardModule = loadDashboard(RED);
     if (!dashboardModule) {
-        RED.log.warn('node-red-contrib-rotator-widget: node-red-dashboard is required but could not be found');
+        RED.log.warn('@ham2k/red-ham-tools: node-red-dashboard is required but could not be found');
         return;
     }
     var ui = dashboardModule(RED);
 
     // Serve the Ham2K logo from the package directory
-    RED.httpAdmin.get('/rotator-widget/ham2k-square.svg', function (req, res) {
-        res.sendFile(path.join(__dirname, 'ham2k-square.svg'));
+    RED.httpAdmin.get('/h2k-rotator/ham2k-square.svg', function (req, res) {
+        res.sendFile(path.join(__dirname, '../../ham2k-square.svg'));
     });
 
     // ------------------------------------------------------------------
@@ -32,7 +32,7 @@ module.exports = function (RED) {
     var _admin1Cache = null;
     var _admin1Pending = null;
 
-    RED.httpAdmin.get('/rotator-widget/admin1.geojson', function (req, res) {
+    RED.httpAdmin.get('/h2k-rotator/admin1.geojson', function (req, res) {
         if (_admin1Cache) { return res.json(_admin1Cache); }
         if (!_admin1Pending) {
             var url = 'https://raw.githubusercontent.com/nvkelso/natural-earth-vector/master/geojson/ne_50m_admin_1_states_provinces.geojson';
@@ -330,7 +330,7 @@ module.exports = function (RED) {
                     .then(function () {
                         return Promise.all([
                             fetch('https://cdn.jsdelivr.net/npm/world-atlas@2/countries-110m.json').then(function (r) { return r.json(); }),
-                            fetch('/rotator-widget/admin1.geojson').then(function (r) { return r.json(); })
+                            fetch('/h2k-rotator/admin1.geojson').then(function (r) { return r.json(); })
                         ]);
                     })
                     .then(function (results) {
@@ -340,7 +340,7 @@ module.exports = function (RED) {
                         setTimeout(function () { $scope.drawMap(); }, 120);
                     })
                     .catch(function (err) {
-                        console.error('[rotator-widget] map load error:', err);
+                        console.error('[h2k-rotator] map load error:', err);
                     });
                 };
 
@@ -623,7 +623,7 @@ module.exports = function (RED) {
                     // ------ Ham2K logo (bottom-right) ------
                     var logoSize = 36;
                     svg.append('image')
-                        .attr('href', '/rotator-widget/ham2k-square.svg')
+                        .attr('href', '/h2k-rotator/ham2k-square.svg')
                         .attr('x', W - logoSize - 8)
                         .attr('y', H - logoSize - 8)
                         .attr('width', logoSize)
@@ -756,5 +756,5 @@ module.exports = function (RED) {
         });
     }
 
-    RED.nodes.registerType('rotator-widget', RotatorWidget);
+    RED.nodes.registerType('h2k-rotator', RotatorWidget);
 };
