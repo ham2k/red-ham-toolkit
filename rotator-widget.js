@@ -43,11 +43,11 @@ module.exports = function (RED) {
             current:      safeColor(config.colorCurrent,      '#00ccff'),
             target:       safeColor(config.colorTarget,       '#ff4400'),
             aligned:      safeColor(config.colorAligned,      '#ffffff'),
-            equator:      safeColor(config.colorEquator,      '#ffffff'),
-            tropics:      safeColor(config.colorTropics,      '#ffcc00'),
-            polarCircles: safeColor(config.colorPolarCircles, '#88ddff')
+            equator:      safeColor(config.colorEquator,      '#888888'),
+            tropics:      safeColor(config.colorTropics,      '#888888'),
+            polarCircles: safeColor(config.colorPolarCircles, '#888888')
         };
-        var latLineWidth = Math.max(0.2, Math.min(5, parseFloat(config.latLineWidth) || 0.8));
+        var latLineWidth = Math.max(0.2, Math.min(5, parseFloat(config.latLineWidth) || 0.4));
 
         // Build a JS object literal using single quotes so it embeds safely inside
         // the double-quoted ng-init HTML attribute (JSON.stringify would break it).
@@ -168,11 +168,11 @@ module.exports = function (RED) {
                     current:      '#00ccff',
                     target:       '#ff4400',
                     aligned:      '#ffffff',
-                    equator:      '#ffffff',
-                    tropics:      '#ffcc00',
-                    polarCircles: '#88ddff'
+                    equator:      '#888888',
+                    tropics:      '#888888',
+                    polarCircles: '#888888'
                 };
-                $scope.latLineWidth = 0.8;
+                $scope.latLineWidth = 0.4;
 
                 // ----------------------------------------------------------
                 // Called by ng-init with values from node config
