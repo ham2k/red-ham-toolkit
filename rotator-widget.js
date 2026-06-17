@@ -75,9 +75,9 @@ module.exports = function (RED) {
             current:      safeColor(config.colorCurrent,      '#00ccff'),
             target:       safeColor(config.colorTarget,       '#ff4400'),
             aligned:      safeColor(config.colorAligned,      '#ffffff'),
-            equator:      safeColor(config.colorEquator,      '#888888'),
-            tropics:      safeColor(config.colorTropics,      '#888888'),
-            polarCircles: safeColor(config.colorPolarCircles, '#888888')
+            equator:      safeColor(config.colorEquator,      '#555555'),
+            polarCircles: safeColor(config.colorPolarCircles, '#555555'),
+            graticule:    safeColor(config.colorGraticule,    '#444444')
         };
         var latLineWidth = Math.max(0.2, Math.min(5, parseFloat(config.latLineWidth) || 0.4));
         var defaultZoom  = Math.max(1.0, Math.min(20, parseFloat(config.defaultZoom)  || 1.0));
@@ -93,8 +93,8 @@ module.exports = function (RED) {
             "target:'"       + colors.target       + "'," +
             "aligned:'"      + colors.aligned      + "'," +
             "equator:'"      + colors.equator      + "'," +
-            "tropics:'"      + colors.tropics      + "'," +
-            "polarCircles:'" + colors.polarCircles + "'" +
+            "polarCircles:'" + colors.polarCircles + "'," +
+            "graticule:'"    + colors.graticule    + "'" +
         '}';
 
         var widgetCleanup = ui.addWidget({
@@ -264,9 +264,9 @@ module.exports = function (RED) {
                     current:      '#00ccff',
                     target:       '#ff4400',
                     aligned:      '#ffffff',
-                    equator:      '#888888',
-                    tropics:      '#888888',
-                    polarCircles: '#888888'
+                    equator:      '#555555',
+                    polarCircles: '#555555',
+                    graticule:    '#444444'
                 };
                 $scope.latLineWidth = 0.4;
 
@@ -425,12 +425,19 @@ module.exports = function (RED) {
                             .style('stroke-width', '0.2px');
                     }
 
+                    // Graticule (10° lat/lon grid) – drawn after land, semitransparent
+                    mapG.append('path')
+                        .datum(d3.geoGraticule().step([20, 20])())
+                        .attr('d', pathGen)
+                        .style('fill', 'none')
+                        .style('stroke', C.graticule)
+                        .style('stroke-width', '0.3px')
+                        .style('opacity', '0.25');
+
                     // Significant latitude lines – drawn after land so they show on both ocean and land
                     var lw = $scope.latLineWidth;
                     var latLines = [
                         { lat:   0,    color: C.equator,      width: lw * 1.2 },  // Equator
-                        { lat:  23.5,  color: C.tropics,      width: lw },         // Tropic of Cancer
-                        { lat: -23.5,  color: C.tropics,      width: lw },         // Tropic of Capricorn
                         { lat:  66.5,  color: C.polarCircles, width: lw },         // Arctic Circle
                         { lat: -66.5,  color: C.polarCircles, width: lw }          // Antarctic Circle
                     ];
