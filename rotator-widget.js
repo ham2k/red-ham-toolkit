@@ -31,6 +31,21 @@ module.exports = function (RED) {
         var safeCurrent = isFinite(parseFloat(config.currentAzimuth)) ? parseFloat(config.currentAzimuth) : 0;
         var safeTarget  = isFinite(parseFloat(config.targetAzimuth))  ? parseFloat(config.targetAzimuth)  : 0;
 
+        // Allow only #rrggbb hex colors to prevent injection via the ng-init string
+        var HEX_RE = /^#[0-9a-fA-F]{6}$/;
+        function safeColor(value, fallback) {
+            return (value && HEX_RE.test(value)) ? value : fallback;
+        }
+        var colors = {
+            ocean:   safeColor(config.colorOcean,   '#afd4ee'),
+            land:    safeColor(config.colorLand,    '#8dbf6a'),
+            current: safeColor(config.colorCurrent, '#1155cc'),
+            target:  safeColor(config.colorTarget,  '#cc2200'),
+            aligned: safeColor(config.colorAligned, '#111111')
+        };
+        // Serialise as a JS object literal embedded in the ng-init call
+        var colorsJson = JSON.stringify(colors);
+
         var widgetCleanup = ui.addWidget({
             node: node,
             group:  config.group,
@@ -41,7 +56,7 @@ module.exports = function (RED) {
             label:  config.label,
 
             format: '<div style="width:100%;height:100%;padding:0;margin:0;box-sizing:border-box;"' +
-                    ' ng-init="init(\'' + safeQth + '\',' + safeCurrent + ',' + safeTarget + ')">' +
+                    ' ng-init="init(\'' + safeQth + '\',' + safeCurrent + ',' + safeTarget + ',' + colorsJson + ')">' +
                     '<svg id="rotator-{{$id}}" style="display:block;width:100%;height:100%;overflow:visible;"></svg>' +
                     '</div>',
 
@@ -128,14 +143,24 @@ module.exports = function (RED) {
                 $scope.qth            = 'JJ00';
                 $scope.currentAzimuth = 0;
                 $scope.targetAzimuth  = 0;
+                $scope.colors = {
+                    ocean:   '#afd4ee',
+                    land:    '#8dbf6a',
+                    current: '#1155cc',
+                    target:  '#cc2200',
+                    aligned: '#111111'
+                };
 
                 // ----------------------------------------------------------
                 // Called by ng-init with values from node config
                 // ----------------------------------------------------------
-                $scope.init = function (qth, currentAz, targetAz) {
+                $scope.init = function (qth, currentAz, targetAz, colors) {
                     $scope.qth            = qth || 'JJ00';
                     $scope.currentAzimuth = parseFloat(currentAz) || 0;
                     $scope.targetAzimuth  = parseFloat(targetAz)  || 0;
+                    if (colors && typeof colors === 'object') {
+                        $scope.colors = colors;
+                    }
 
                     Promise.all([
                         loadScript('https://cdn.jsdelivr.net/npm/d3@7/dist/d3.min.js',
@@ -214,30 +239,33 @@ module.exports = function (RED) {
                             .attr('fill', color);
                     }
 
+                    var C = $scope.colors;
+
                     // ------ Ocean background ------
                     svg.append('circle')
                         .attr('cx', cx).attr('cy', cy).attr('r', radius)
-                        .attr('fill', '#afd4ee')
+                        .attr('fill', C.ocean)
                         .attr('stroke', '#333')
                         .attr('stroke-width', 1.5);
 
                     var mapG = svg.append('g').attr('clip-path', 'url(#' + clipId + ')');
 
-                    // Graticule (10° grid)
+                    // Graticule (10° grid) – slightly lighter than ocean
                     mapG.append('path')
                         .datum(d3.geoGraticule()())
                         .attr('d', pathGen)
                         .attr('fill', 'none')
-                        .attr('stroke', '#8ab8d8')
-                        .attr('stroke-width', 0.4);
+                        .attr('stroke', C.ocean)
+                        .attr('stroke-opacity', 0.5)
+                        .attr('stroke-width', 0.6);
 
                     // Land
                     mapG.append('path')
                         .datum(topojson.feature($scope.worldData, $scope.worldData.objects.land))
                         .attr('d', pathGen)
-                        .attr('fill', '#8dbf6a');
+                        .attr('fill', C.land);
 
-                    // Country borders
+                    // Country borders – darker shade of land color
                     mapG.append('path')
                         .datum(topojson.mesh(
                             $scope.worldData,
@@ -246,8 +274,9 @@ module.exports = function (RED) {
                         ))
                         .attr('d', pathGen)
                         .attr('fill', 'none')
-                        .attr('stroke', '#4a5e38')
-                        .attr('stroke-width', 0.4);
+                        .attr('stroke', C.land)
+                        .attr('stroke-opacity', 0.5)
+                        .attr('stroke-width', 0.6);
 
                     // ------ Degree tick marks ------
                     for (var deg = 0; deg < 360; deg += 10) {
@@ -291,21 +320,21 @@ module.exports = function (RED) {
                     var lineR = radius - 6; // slightly short so arrow head is inside circle
 
                     if (!aligned) {
-                        // Target azimuth – red
+                        // Target azimuth
                         var tId  = 'arrow-tgt-' + $scope.$id;
-                        arrowMarker(tId, 'red');
+                        arrowMarker(tId, C.target);
                         var trad = $scope.targetAzimuth * Math.PI / 180;
                         svg.append('line')
                             .attr('x1', cx).attr('y1', cy)
                             .attr('x2', cx + lineR * Math.sin(trad))
                             .attr('y2', cy - lineR * Math.cos(trad))
-                            .attr('stroke', 'red')
+                            .attr('stroke', C.target)
                             .attr('stroke-width', 2)
                             .attr('marker-end', 'url(#' + tId + ')');
                     }
 
-                    // Current azimuth – blue when misaligned, black when aligned
-                    var curColor = aligned ? '#111' : '#1155cc';
+                    // Current azimuth
+                    var curColor = aligned ? C.aligned : C.current;
                     var cId  = 'arrow-cur-' + $scope.$id;
                     arrowMarker(cId, curColor);
                     var crad = $scope.currentAzimuth * Math.PI / 180;

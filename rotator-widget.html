@@ -30,6 +30,28 @@
         <input type="number" id="node-input-targetAzimuth" min="0" max="359" step="1"
                placeholder="0" style="width:6em;"> &deg;
     </div>
+    <hr/>
+    <div class="form-row">
+        <label style="width:140px;" for="node-input-colorOcean"><i class="fa fa-tint"></i> Ocean color</label>
+        <input type="color" id="node-input-colorOcean" style="width:4em;height:2em;padding:1px;cursor:pointer;">
+    </div>
+    <div class="form-row">
+        <label style="width:140px;" for="node-input-colorLand"><i class="fa fa-globe"></i> Land color</label>
+        <input type="color" id="node-input-colorLand" style="width:4em;height:2em;padding:1px;cursor:pointer;">
+    </div>
+    <div class="form-row">
+        <label style="width:140px;" for="node-input-colorCurrent"><i class="fa fa-location-arrow"></i> Current az. color</label>
+        <input type="color" id="node-input-colorCurrent" style="width:4em;height:2em;padding:1px;cursor:pointer;">
+    </div>
+    <div class="form-row">
+        <label style="width:140px;" for="node-input-colorTarget"><i class="fa fa-crosshairs"></i> Target az. color</label>
+        <input type="color" id="node-input-colorTarget" style="width:4em;height:2em;padding:1px;cursor:pointer;">
+    </div>
+    <div class="form-row">
+        <label style="width:140px;" for="node-input-colorAligned"><i class="fa fa-check"></i> Aligned az. color</label>
+        <input type="color" id="node-input-colorAligned" style="width:4em;height:2em;padding:1px;cursor:pointer;">
+        <span style="margin-left:6px;font-size:11px;color:#888;">shown when within 5°</span>
+    </div>
 </script>
 
 <!-- ============================================================
@@ -85,7 +107,12 @@
             label:          { value: 'Rotator' },
             qth:            { value: 'JJ00' },
             currentAzimuth: { value: 0 },
-            targetAzimuth:  { value: 0 }
+            targetAzimuth:  { value: 0 },
+            colorOcean:     { value: '#afd4ee' },
+            colorLand:      { value: '#8dbf6a' },
+            colorCurrent:   { value: '#1155cc' },
+            colorTarget:    { value: '#cc2200' },
+            colorAligned:   { value: '#111111' }
         },
         inputs:  1,
         outputs: 1,
