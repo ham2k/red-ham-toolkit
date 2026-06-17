@@ -21,7 +21,7 @@ module.exports = function (RED) {
 
     // Serve the Ham2K logo from the package directory
     RED.httpAdmin.get('/h2k-rotator/ham2k-square.svg', function (req, res) {
-        res.sendFile(path.join(__dirname, '../../ham2k-square.svg'));
+        res.sendFile(path.join(__dirname, '../../assets/ham2k-square.svg'));
     });
 
     // ------------------------------------------------------------------
