@@ -1,0 +1,16 @@
+{
+  "name": "node-red-contrib-rotator-widget",
+  "version": "0.1.0",
+  "description": "Antenna rotator widget for Node-RED Dashboard 1.0",
+  "keywords": ["node-red", "rotator", "antenna", "ham-radio", "azimuth"],
+  "author": "",
+  "license": "MIT",
+  "node-red": {
+    "nodes": {
+      "rotator-widget": "rotator-widget.js"
+    }
+  },
+  "peerDependencies": {
+    "node-red-dashboard": "2.x"
+  }
+}
