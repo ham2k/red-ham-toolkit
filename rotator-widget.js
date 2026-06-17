@@ -19,6 +19,38 @@ module.exports = function (RED) {
     }
     var ui = dashboardModule(RED);
 
+    // ------------------------------------------------------------------
+    // Server-side cache + proxy for the Natural Earth 50m admin-1 data.
+    // The 110m dataset only has US states; 50m is global (~5 MB GeoJSON).
+    // We fetch once from GitHub, cache in memory, serve to the browser.
+    // ------------------------------------------------------------------
+    var _admin1Cache = null;
+    var _admin1Pending = null;
+
+    RED.httpAdmin.get('/rotator-widget/admin1.geojson', function (req, res) {
+        if (_admin1Cache) { return res.json(_admin1Cache); }
+        if (!_admin1Pending) {
+            var url = 'https://raw.githubusercontent.com/nvkelso/natural-earth-vector/master/geojson/ne_50m_admin_1_states_provinces.geojson';
+            var KEEP = { USA: true, CAN: true, AUS: true };
+            _admin1Pending = fetch(url)
+                .then(function (r) { return r.json(); })
+                .then(function (data) {
+                    _admin1Cache = {
+                        type: 'FeatureCollection',
+                        features: data.features.filter(function (f) {
+                            return KEEP[f.properties && f.properties.adm0_a3];
+                        })
+                    };
+                    _admin1Pending = null;
+                    return _admin1Cache;
+                })
+                .catch(function (err) { _admin1Pending = null; throw err; });
+        }
+        _admin1Pending
+            .then(function (data) { res.json(data); })
+            .catch(function (err) { res.status(500).json({ error: String(err) }); });
+    });
+
     function RotatorWidget(config) {
         RED.nodes.createNode(this, config);
         var node = this;
@@ -159,11 +191,71 @@ module.exports = function (RED) {
                 // Scope state
                 // ----------------------------------------------------------
                 $scope.worldData      = null;
+                $scope.admin1Data     = null;
                 $scope.qth            = 'JJ00';
                 $scope.currentAzimuth = 0;
                 $scope.targetAzimuth  = 0;
                 $scope.zoom        = 1.0;
+                $scope.targetZoom  = 1.0;
                 $scope.defaultZoom = 1.0;
+
+                // ----------------------------------------------------------
+                // Smooth zoom – animate $scope.zoom toward $scope.targetZoom
+                // ----------------------------------------------------------
+                var zoomAnimFrame = null;
+
+                function stepZoom() {
+                    var diff = $scope.targetZoom - $scope.zoom;
+                    if (Math.abs(diff) < 0.003) {
+                        $scope.zoom = $scope.targetZoom;
+                        $scope.drawMap();
+                        zoomAnimFrame = null;
+                        return;
+                    }
+                    $scope.zoom += diff * 0.18;
+                    $scope.drawMap();
+                    zoomAnimFrame = requestAnimationFrame(stepZoom);
+                }
+
+                function requestZoomTo(z) {
+                    $scope.targetZoom = Math.max(1.0, Math.min(20, z));
+                    if (!zoomAnimFrame) {
+                        zoomAnimFrame = requestAnimationFrame(stepZoom);
+                    }
+                }
+
+                // ----------------------------------------------------------
+                // Drag-to-zoom state (lives here so window handlers are added once)
+                // ----------------------------------------------------------
+                var dragStart    = null;  // { x, y } in client coords
+                var dragZoomBase = 1.0;
+                var didDrag      = false;
+
+                function onMouseMove(e) {
+                    if (!dragStart) return;
+                    var dx = e.clientX - dragStart.x;
+                    var dy = e.clientY - dragStart.y;
+                    if (!didDrag && (Math.abs(dx) > 4 || Math.abs(dy) > 4)) { didDrag = true; }
+                    if (!didDrag) return;
+                    // right (+dx) or up (-dy) → zoom in; left or down → zoom out
+                    var delta = (dx - dy) / 120;
+                    var newZoom = Math.max(1.0, Math.min(20, dragZoomBase * Math.pow(2, delta)));
+                    $scope.zoom       = newZoom;
+                    $scope.targetZoom = newZoom;
+                    if (zoomAnimFrame) { cancelAnimationFrame(zoomAnimFrame); zoomAnimFrame = null; }
+                    $scope.drawMap();
+                }
+
+                function onMouseUp() { dragStart = null; }
+
+                document.addEventListener('mousemove', onMouseMove);
+                document.addEventListener('mouseup',   onMouseUp);
+
+                $scope.$on('$destroy', function () {
+                    document.removeEventListener('mousemove', onMouseMove);
+                    document.removeEventListener('mouseup',   onMouseUp);
+                    if (zoomAnimFrame) { cancelAnimationFrame(zoomAnimFrame); }
+                });
                 $scope.colors = {
                     ocean:        '#4a90c4',
                     land:         '#c8b89a',
@@ -198,11 +290,14 @@ module.exports = function (RED) {
                             function () { return typeof window.topojson !== 'undefined' && typeof window.topojson.feature === 'function'; })
                     ])
                     .then(function () {
-                        return fetch('https://cdn.jsdelivr.net/npm/world-atlas@2/countries-110m.json');
+                        return Promise.all([
+                            fetch('https://cdn.jsdelivr.net/npm/world-atlas@2/countries-110m.json').then(function (r) { return r.json(); }),
+                            fetch('/rotator-widget/admin1.geojson').then(function (r) { return r.json(); })
+                        ]);
                     })
-                    .then(function (r) { return r.json(); })
-                    .then(function (world) {
-                        $scope.worldData = world;
+                    .then(function (results) {
+                        $scope.worldData  = results[0];
+                        $scope.admin1Data = results[1];
                         // Defer slightly so the SVG has been laid out by the browser
                         setTimeout(function () { $scope.drawMap(); }, 120);
                     })
@@ -241,7 +336,8 @@ module.exports = function (RED) {
                     var projection = d3.geoAzimuthalEquidistant()
                         .rotate([-lon, -lat])
                         .scale(radius / Math.PI * $scope.zoom)
-                        .translate([cx, cy]);
+                        .translate([cx, cy])
+                        .clipAngle(Math.min(179.9, 180 / $scope.zoom));
 
                     var pathGen = d3.geoPath().projection(projection);
 
@@ -295,10 +391,12 @@ module.exports = function (RED) {
                         .attr('d', pathGen)
                         .style('fill', C.land)
                         .style('stroke', C.landOutline)
-                        .style('stroke-width', '0.5px');
+                        .style('stroke-width', (0.2 + Math.max(0, $scope.zoom - 1) * 0.06).toFixed(2) + 'px');
 
-                    // Country borders (shared edges only) – only when large enough to read
-                    if (radius > 120) {
+                    // Country borders (shared edges only) – fade in as zoom increases
+                    var borderOpacity = Math.max(0, Math.min(1, ($scope.zoom - 2) / 1.0));
+                    if (borderOpacity > 0.01) {
+                        var borderWidth = (0.2 + ($scope.zoom - 2) * 0.15).toFixed(2);
                         mapG.append('path')
                             .datum(topojson.mesh(
                                 $scope.worldData,
@@ -308,7 +406,22 @@ module.exports = function (RED) {
                             .attr('d', pathGen)
                             .style('fill', 'none')
                             .style('stroke', C.landOutline)
-                            .style('stroke-width', '0.3px');
+                            .style('stroke-width', borderWidth + 'px')
+                            .style('opacity', borderOpacity);
+                    }
+
+                    // State / province borders for large federal countries – fade in after 3×
+                    var stateOpacity = Math.max(0, Math.min(1, ($scope.zoom - 2.5) / 1.5));
+                    if (stateOpacity > 0 && $scope.admin1Data) {
+                        mapG.append('g')
+                            .style('opacity', stateOpacity)
+                            .selectAll('path')
+                            .data($scope.admin1Data.features)
+                            .enter().append('path')
+                            .attr('d', pathGen)
+                            .style('fill', 'none')
+                            .style('stroke', C.landOutline)
+                            .style('stroke-width', '0.2px');
                     }
 
                     // Significant latitude lines – drawn after land so they show on both ocean and land
@@ -430,6 +543,7 @@ module.exports = function (RED) {
 
                     // ------ Click to set target azimuth ------
                     svg.on('click', function (event) {
+                        if (didDrag) return;
                         var coords = d3.pointer(event, svgEl);
                         var dx = coords[0] - cx;
                         var dy = coords[1] - cy;
@@ -440,12 +554,19 @@ module.exports = function (RED) {
                         $scope.send({ payload: $scope.targetAzimuth, topic: 'targetAzimuth' });
                     });
 
+                    // ------ Drag to zoom (mousedown tracked; move/up are on window) ------
+                    svg.on('mousedown', function (event) {
+                        event.preventDefault();
+                        dragStart    = { x: event.clientX, y: event.clientY };
+                        dragZoomBase = $scope.zoom;
+                        didDrag      = false;
+                    });
+
                     // ------ Scroll wheel zoom ------
                     svg.on('wheel', function (event) {
                         event.preventDefault();
-                        var factor = event.deltaY < 0 ? 1.04 : 1 / 1.04;
-                        $scope.zoom = Math.max(1.0, Math.min(20, $scope.zoom * factor));
-                        $scope.drawMap();
+                        var factor = event.deltaY < 0 ? 1.08 : 1 / 1.08;
+                        requestZoomTo($scope.targetZoom * factor);
                     });
 
                     // ------ Zoom reset button (shown only when zoom != default) ------
@@ -455,8 +576,7 @@ module.exports = function (RED) {
                             .style('cursor', 'pointer')
                             .on('click', function (event) {
                                 event.stopPropagation();
-                                $scope.zoom = $scope.defaultZoom;
-                                $scope.drawMap();
+                                requestZoomTo($scope.defaultZoom);
                             });
                         btnG.append('rect')
                             .attr('x', btnX).attr('y', btnY)
