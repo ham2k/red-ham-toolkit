@@ -198,6 +198,7 @@ module.exports = function (RED) {
                 $scope.zoom        = 1.0;
                 $scope.targetZoom  = 1.0;
                 $scope.defaultZoom = 1.0;
+                $scope.alignedSince = Date.now() - 5001;  // treat initial state as already aligned if within 3°
 
                 // ----------------------------------------------------------
                 // Smooth zoom – animate $scope.zoom toward $scope.targetZoom
@@ -481,7 +482,18 @@ module.exports = function (RED) {
                     var diff = Math.abs(
                         (($scope.currentAzimuth - $scope.targetAzimuth) % 360 + 540) % 360 - 180
                     );
-                    var aligned = diff <= 5;
+                    var within3 = diff <= 3;
+                    if (within3) {
+                        if (!$scope.alignedSince) { $scope.alignedSince = Date.now(); }
+                    } else {
+                        $scope.alignedSince = null;
+                    }
+                    var aligned = within3 && (diff < 0.1 || (Date.now() - $scope.alignedSince >= 5000));
+                    // Schedule a redraw to fire the transition once the 5s window elapses
+                    if (within3 && !aligned) {
+                        var msLeft = 5000 - (Date.now() - $scope.alignedSince);
+                        setTimeout(function () { $scope.drawMap(); }, msLeft + 50);
+                    }
 
                     var lineR = radius - 6; // slightly short so arrow head is inside circle
 
