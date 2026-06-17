@@ -312,24 +312,23 @@ module.exports = function (RED) {
                     }
 
                     // Significant latitude lines – drawn after land so they show on both ocean and land
-                    var W = $scope.latLineWidth;
+                    var lw = $scope.latLineWidth;
                     var latLines = [
-                        { lat:   0,    color: C.equator,      dash: null,  width: W * 1.2 },  // Equator
-                        { lat:  23.5,  color: C.tropics,      dash: '5,3', width: W },         // Tropic of Cancer
-                        { lat: -23.5,  color: C.tropics,      dash: '5,3', width: W },         // Tropic of Capricorn
-                        { lat:  66.5,  color: C.polarCircles, dash: '3,3', width: W },         // Arctic Circle
-                        { lat: -66.5,  color: C.polarCircles, dash: '3,3', width: W }          // Antarctic Circle
+                        { lat:   0,    color: C.equator,      width: lw * 1.2 },  // Equator
+                        { lat:  23.5,  color: C.tropics,      width: lw },         // Tropic of Cancer
+                        { lat: -23.5,  color: C.tropics,      width: lw },         // Tropic of Capricorn
+                        { lat:  66.5,  color: C.polarCircles, width: lw },         // Arctic Circle
+                        { lat: -66.5,  color: C.polarCircles, width: lw }          // Antarctic Circle
                     ];
                     latLines.forEach(function (l) {
                         var coords = [];
                         for (var lon = -180; lon <= 180; lon += 2) { coords.push([lon, l.lat]); }
-                        var line = mapG.append('path')
+                        mapG.append('path')
                             .datum({ type: 'LineString', coordinates: coords })
                             .attr('d', pathGen)
                             .style('fill', 'none')
                             .style('stroke', l.color)
                             .style('stroke-width', l.width + 'px');
-                        if (l.dash) line.style('stroke-dasharray', l.dash);
                     });
 
                     // ------ Degree tick marks ------
