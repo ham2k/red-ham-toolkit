@@ -162,15 +162,15 @@ module.exports = function (RED) {
                 $scope.currentAzimuth = 0;
                 $scope.targetAzimuth  = 0;
                 $scope.colors = {
-                    ocean:        '#afd4ee',
-                    land:         '#8dbf6a',
-                    landOutline:  '#4a5e38',
-                    current:      '#1155cc',
-                    target:       '#cc2200',
-                    aligned:      '#111111',
+                    ocean:        '#4a90c4',
+                    land:         '#c8b89a',
+                    landOutline:  '#8a7060',
+                    current:      '#00ccff',
+                    target:       '#ff4400',
+                    aligned:      '#ffffff',
                     equator:      '#ffffff',
-                    tropics:      '#ddcc44',
-                    polarCircles: '#44aadd'
+                    tropics:      '#ffcc00',
+                    polarCircles: '#88ddff'
                 };
                 $scope.latLineWidth = 0.8;
 
