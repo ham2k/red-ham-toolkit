@@ -37,6 +37,12 @@
     </div>
     <hr/>
     <div class="form-row">
+        <label id="rotator-colors-toggle" style="width:auto;font-weight:bold;cursor:pointer;user-select:none;">
+            <i class="fa fa-caret-right" id="rotator-colors-caret"></i> Colors &amp; Styles
+        </label>
+    </div>
+    <div id="rotator-colors-section" style="display:none;">
+    <div class="form-row">
         <label style="width:140px;" for="node-input-colorCurrent"><i class="fa fa-location-arrow"></i> Current az. color</label>
         <input type="color" id="node-input-colorCurrent" style="width:4em;height:2em;padding:1px;cursor:pointer;">
         <input type="number" id="node-input-opacityCurrent" min="0" max="100" step="1" style="width:4em;margin-left:6px;"> %
@@ -91,18 +97,30 @@
         <input type="number" id="node-input-latLineWidth" min="0.2" max="5" step="0.1"
                placeholder="0.4" style="width:5em;"> px
     </div>
-    <hr/>
-    <div class="form-row">
-        <label for="node-input-defaultZoom"><i class="fa fa-search"></i> Default zoom</label>
-        <input type="number" id="node-input-defaultZoom" min="1" max="20" step="0.05"
-               placeholder="1" style="width:5em;">
-        <span style="margin-left:6px;font-size:11px;color:#888;">1 = full globe</span>
-    </div>
     <div class="form-row" style="margin-top:10px;">
         <button id="rotator-reset-colors" class="ui-button ui-widget ui-corner-all"
                 style="margin-left:0;">
             <i class="fa fa-undo"></i> Reset colors to defaults
         </button>
+    </div>
+    </div>
+    <hr/>
+    <div class="form-row">
+        <label id="rotator-advanced-toggle" style="width:auto;font-weight:bold;cursor:pointer;user-select:none;">
+            <i class="fa fa-caret-right" id="rotator-advanced-caret"></i> Advanced Settings
+        </label>
+    </div>
+    <div id="rotator-advanced-section" style="display:none;">
+        <div class="form-row">
+            <label for="node-input-defaultZoom"><i class="fa fa-search"></i> Default zoom</label>
+            <input type="number" id="node-input-defaultZoom" min="1" max="20" step="0.05"
+                   placeholder="1" style="width:5em;">
+            <span style="margin-left:6px;font-size:11px;color:#888;">1 = full globe</span>
+        </div>
+        <div class="form-row">
+            <label for="node-input-showLogo" style="width:auto;"><i class="fa fa-image"></i> Show Ham2K logo</label>
+            <input type="checkbox" id="node-input-showLogo" style="display:inline-block;width:auto;vertical-align:top;margin-left:6px;">
+        </div>
     </div>
 </script>
 
@@ -180,7 +198,8 @@
             opacityPolarCircles:  { value: 55 },
             latLineWidth:         { value: 0.4 },
             defaultZoom:          { value: 1.0 },
-            beamWidth:            { value: 30 }
+            beamWidth:            { value: 30 },
+            showLogo:             { value: true }
         },
         inputs:  1,
         outputs: 1,
@@ -188,8 +207,9 @@
         label:   function () { return this.label || 'H2K Rotator'; },
 
         oneditprepare: function () {
-            if (typeof RED.nodes.getType('ui_button') !== 'undefined') {
-                RED.nodes.getType('ui_button').prototype.oneditprepare.call(this);
+            var uiButton = RED.nodes.getType('ui_button');
+            if (uiButton && uiButton.prototype && typeof uiButton.prototype.oneditprepare === 'function') {
+                uiButton.prototype.oneditprepare.call(this);
             }
 
             var DEFAULTS = {
@@ -233,6 +253,24 @@
                 });
             }());
 
+            // Collapsible sections (closed by default)
+            function makeCollapsible(toggleId, sectionId, caretId) {
+                $('#' + toggleId).on('click', function (e) {
+                    e.preventDefault();
+                    var $section = $('#' + sectionId);
+                    var $caret   = $('#' + caretId);
+                    if ($section.is(':visible')) {
+                        $section.hide();
+                        $caret.removeClass('fa-caret-down').addClass('fa-caret-right');
+                    } else {
+                        $section.show();
+                        $caret.removeClass('fa-caret-right').addClass('fa-caret-down');
+                    }
+                });
+            }
+            makeCollapsible('rotator-colors-toggle',   'rotator-colors-section',   'rotator-colors-caret');
+            makeCollapsible('rotator-advanced-toggle', 'rotator-advanced-section', 'rotator-advanced-caret');
+
             $('#rotator-reset-colors').on('click', function (e) {
                 e.preventDefault();
                 Object.keys(DEFAULTS).forEach(function (key) {
@@ -241,8 +279,9 @@
             });
         },
         oneditsave: function () {
-            if (typeof RED.nodes.getType('ui_button') !== 'undefined') {
-                RED.nodes.getType('ui_button').prototype.oneditsave.call(this);
+            var uiButton = RED.nodes.getType('ui_button');
+            if (uiButton && uiButton.prototype && typeof uiButton.prototype.oneditsave === 'function') {
+                uiButton.prototype.oneditsave.call(this);
             }
         }
     });
