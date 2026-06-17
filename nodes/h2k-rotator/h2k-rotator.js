@@ -275,7 +275,20 @@ module.exports = function (RED) {
                     $scope.drawMap();
                 }
 
-                function onMouseUp() { dragStart = null; }
+                // Mouse-up ends a drag, or — if no drag occurred and the press
+                // began on our SVG — is treated as a click. We synthesize the
+                // click here rather than relying on the DOM 'click' event,
+                // because frequent drawMap() redraws (while the lines move)
+                // replace the element under the cursor between mousedown and
+                // mouseup, so the browser never fires a real 'click'.
+                function onMouseUp(e) {
+                    var wasDrag    = didDrag;
+                    var startedHere = dragStart && dragStart.onSvg;
+                    dragStart = null;
+                    didDrag   = false;
+                    if (wasDrag || !startedHere) return;
+                    selectTargetAt(e.clientX, e.clientY);
+                }
 
                 document.addEventListener('mousemove', onMouseMove);
                 document.addEventListener('mouseup',   onMouseUp);
@@ -284,7 +297,62 @@ module.exports = function (RED) {
                     document.removeEventListener('mousemove', onMouseMove);
                     document.removeEventListener('mouseup',   onMouseUp);
                     if (zoomAnimFrame) { cancelAnimationFrame(zoomAnimFrame); }
+                    var el = document.getElementById('rotator-' + $scope.$id);
+                    if (el) {
+                        el.removeEventListener('mousedown', onSvgMouseDown);
+                        el.removeEventListener('wheel',     onSvgWheel);
+                    }
                 });
+
+                // ----------------------------------------------------------
+                // Pointer handlers — registered ONCE on the DOM element so
+                // frequent drawMap() calls (from incoming messages) can never
+                // replace them mid-event and swallow a click.
+                // ----------------------------------------------------------
+                function getSvgGeometry() {
+                    var el = document.getElementById('rotator-' + $scope.$id);
+                    if (!el) return null;
+                    var rect = el.getBoundingClientRect();
+                    var W = rect.width, H = rect.height;
+                    var LABEL_PAD = 26;
+                    var radius = Math.min(W, H) / 2 - LABEL_PAD;
+                    return { rect: rect, cx: W / 2, cy: H / 2, radius: radius };
+                }
+
+                // Convert client coords → SVG-local coords and set the target azimuth
+                function selectTargetAt(clientX, clientY) {
+                    var g = getSvgGeometry();
+                    if (!g) return;
+                    var dx = (clientX - g.rect.left) - g.cx;
+                    var dy = (clientY - g.rect.top)  - g.cy;
+                    if (Math.sqrt(dx * dx + dy * dy) > g.radius) return;
+                    var az = (Math.atan2(dx, -dy) * 180 / Math.PI + 360) % 360;
+                    $scope.targetAzimuth = Math.round(az);
+                    $scope.alignedSince  = null;
+                    $scope.drawMap();
+                    $scope.send({ payload: $scope.targetAzimuth, topic: 'targetAzimuth' });
+                }
+
+                function onSvgMouseDown(event) {
+                    dragStart    = { x: event.clientX, y: event.clientY, onSvg: true };
+                    dragZoomBase = $scope.zoom;
+                    didDrag      = false;
+                }
+
+                function onSvgWheel(event) {
+                    event.preventDefault();
+                    var factor = event.deltaY < 0 ? 1.08 : 1 / 1.08;
+                    requestZoomTo($scope.targetZoom * factor);
+                }
+
+                // Attach once after the SVG element exists (init fires after ng-init)
+                setTimeout(function () {
+                    var el = document.getElementById('rotator-' + $scope.$id);
+                    if (!el) return;
+                    el.style.userSelect = 'none';
+                    el.addEventListener('mousedown', onSvgMouseDown);
+                    el.addEventListener('wheel',     onSvgWheel, { passive: false });
+                }, 0);
                 $scope.colors = {
                     ocean:               '#76acd6',
                     land:                '#9e7e3d',
@@ -676,34 +744,6 @@ module.exports = function (RED) {
                             .text(Math.round($scope.targetAzimuth) + '°');
                     }
 
-                    // ------ Click to set target azimuth ------
-                    svg.on('click', function (event) {
-                        if (didDrag) return;
-                        var coords = d3.pointer(event, svgEl);
-                        var dx = coords[0] - cx;
-                        var dy = coords[1] - cy;
-                        if (Math.sqrt(dx * dx + dy * dy) > radius) return;
-                        var az = (Math.atan2(dx, -dy) * 180 / Math.PI + 360) % 360;
-                        $scope.targetAzimuth = Math.round(az);
-                        $scope.drawMap();
-                        $scope.send({ payload: $scope.targetAzimuth, topic: 'targetAzimuth' });
-                    });
-
-                    // ------ Drag to zoom (mousedown tracked; move/up are on window) ------
-                    svg.on('mousedown', function (event) {
-                        event.preventDefault();
-                        dragStart    = { x: event.clientX, y: event.clientY };
-                        dragZoomBase = $scope.zoom;
-                        didDrag      = false;
-                    });
-
-                    // ------ Scroll wheel zoom ------
-                    svg.on('wheel', function (event) {
-                        event.preventDefault();
-                        var factor = event.deltaY < 0 ? 1.08 : 1 / 1.08;
-                        requestZoomTo($scope.targetZoom * factor);
-                    });
-
                     // ------ Zoom reset button (shown only when zoom != default) ------
                     if (Math.abs($scope.zoom - $scope.defaultZoom) > 0.01) {
                         var btnSize = 26, btnX = W - btnSize - 6, btnY = 8;
@@ -743,6 +783,7 @@ module.exports = function (RED) {
                     }
                     if (msg.targetAzimuth !== undefined) {
                         $scope.targetAzimuth = parseFloat(msg.targetAzimuth);
+                        $scope.alignedSince = null;
                         changed = true;
                     }
                     if (changed) $scope.drawMap();
