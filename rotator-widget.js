@@ -161,6 +161,7 @@ module.exports = function (RED) {
                 $scope.qth            = 'JJ00';
                 $scope.currentAzimuth = 0;
                 $scope.targetAzimuth  = 0;
+                $scope.zoom = 1.0;  // projection scale multiplier; 1 = full globe
                 $scope.colors = {
                     ocean:        '#4a90c4',
                     land:         '#c8b89a',
@@ -233,7 +234,7 @@ module.exports = function (RED) {
 
                     var projection = d3.geoAzimuthalEquidistant()
                         .rotate([-lon, -lat])
-                        .scale(radius / Math.PI)   // full globe fits in 'radius' pixels
+                        .scale(radius / Math.PI * $scope.zoom)
                         .translate([cx, cy]);
 
                     var pathGen = d3.geoPath().projection(projection);
@@ -432,6 +433,14 @@ module.exports = function (RED) {
                         $scope.targetAzimuth = Math.round(az);
                         $scope.drawMap();
                         $scope.send({ payload: $scope.targetAzimuth, topic: 'targetAzimuth' });
+                    });
+
+                    // ------ Scroll wheel zoom ------
+                    svg.on('wheel', function (event) {
+                        event.preventDefault();
+                        var factor = event.deltaY < 0 ? 1.15 : 1 / 1.15;
+                        $scope.zoom = Math.max(1.0, Math.min(20, $scope.zoom * factor));
+                        $scope.drawMap();
                     });
                 };
 
