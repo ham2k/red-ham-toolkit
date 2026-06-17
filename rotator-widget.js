@@ -37,15 +37,15 @@ module.exports = function (RED) {
             return (value && HEX_RE.test(value)) ? value : fallback;
         }
         var colors = {
-            ocean:        safeColor(config.colorOcean,        '#afd4ee'),
-            land:         safeColor(config.colorLand,         '#8dbf6a'),
-            landOutline:  safeColor(config.colorLandOutline,  '#4a5e38'),
-            current:      safeColor(config.colorCurrent,      '#1155cc'),
-            target:       safeColor(config.colorTarget,       '#cc2200'),
-            aligned:      safeColor(config.colorAligned,      '#111111'),
+            ocean:        safeColor(config.colorOcean,        '#4a90c4'),
+            land:         safeColor(config.colorLand,         '#c8b89a'),
+            landOutline:  safeColor(config.colorLandOutline,  '#8a7060'),
+            current:      safeColor(config.colorCurrent,      '#00ccff'),
+            target:       safeColor(config.colorTarget,       '#ff4400'),
+            aligned:      safeColor(config.colorAligned,      '#ffffff'),
             equator:      safeColor(config.colorEquator,      '#ffffff'),
-            tropics:      safeColor(config.colorTropics,      '#ddcc44'),
-            polarCircles: safeColor(config.colorPolarCircles, '#44aadd')
+            tropics:      safeColor(config.colorTropics,      '#ffcc00'),
+            polarCircles: safeColor(config.colorPolarCircles, '#88ddff')
         };
         var latLineWidth = Math.max(0.2, Math.min(5, parseFloat(config.latLineWidth) || 0.8));
 
