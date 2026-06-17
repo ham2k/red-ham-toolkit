@@ -32,6 +32,27 @@
     </div>
     <hr/>
     <div class="form-row">
+        <label style="width:140px;" for="node-input-colorCurrent"><i class="fa fa-location-arrow"></i> Current az. color</label>
+        <input type="color" id="node-input-colorCurrent" style="width:4em;height:2em;padding:1px;cursor:pointer;">
+        <input type="number" id="node-input-opacityCurrent" min="0" max="100" step="1" style="width:4em;margin-left:6px;"> %
+    </div>
+    <div class="form-row">
+        <label style="width:140px;" for="node-input-colorTarget"><i class="fa fa-crosshairs"></i> Target az. color</label>
+        <input type="color" id="node-input-colorTarget" style="width:4em;height:2em;padding:1px;cursor:pointer;">
+        <input type="number" id="node-input-opacityTarget" min="0" max="100" step="1" style="width:4em;margin-left:6px;"> %
+    </div>
+    <div class="form-row">
+        <label style="width:140px;" for="node-input-colorAligned"><i class="fa fa-check"></i> Aligned az. color</label>
+        <input type="color" id="node-input-colorAligned" style="width:4em;height:2em;padding:1px;cursor:pointer;">
+        <input type="number" id="node-input-opacityAligned" min="0" max="100" step="1" style="width:4em;margin-left:6px;"> %
+    </div>
+    <div class="form-row">
+        <label style="width:140px;" for="node-input-colorHudBg"><i class="fa fa-info-circle"></i> HUD background</label>
+        <input type="color" id="node-input-colorHudBg" style="width:4em;height:2em;padding:1px;cursor:pointer;">
+        <input type="number" id="node-input-opacityHudBg" min="0" max="100" step="1" style="width:4em;margin-left:6px;"> %
+    </div>
+    <hr/>
+    <div class="form-row">
         <label style="width:140px;" for="node-input-colorOcean"><i class="fa fa-tint"></i> Ocean color</label>
         <input type="color" id="node-input-colorOcean" style="width:4em;height:2em;padding:1px;cursor:pointer;">
     </div>
@@ -40,34 +61,25 @@
         <input type="color" id="node-input-colorLand" style="width:4em;height:2em;padding:1px;cursor:pointer;">
     </div>
     <div class="form-row">
-        <label style="width:140px;" for="node-input-colorCurrent"><i class="fa fa-location-arrow"></i> Current az. color</label>
-        <input type="color" id="node-input-colorCurrent" style="width:4em;height:2em;padding:1px;cursor:pointer;">
-    </div>
-    <div class="form-row">
-        <label style="width:140px;" for="node-input-colorTarget"><i class="fa fa-crosshairs"></i> Target az. color</label>
-        <input type="color" id="node-input-colorTarget" style="width:4em;height:2em;padding:1px;cursor:pointer;">
-    </div>
-    <div class="form-row">
-        <label style="width:140px;" for="node-input-colorAligned"><i class="fa fa-check"></i> Aligned az. color</label>
-        <input type="color" id="node-input-colorAligned" style="width:4em;height:2em;padding:1px;cursor:pointer;">
-        <span style="margin-left:6px;font-size:11px;color:#888;">shown when within 5°</span>
-    </div>
-    <div class="form-row">
         <label style="width:140px;" for="node-input-colorLandOutline"><i class="fa fa-pencil"></i> Land outline</label>
         <input type="color" id="node-input-colorLandOutline" style="width:4em;height:2em;padding:1px;cursor:pointer;">
+        <input type="number" id="node-input-opacityLandOutline" min="0" max="100" step="1" style="width:4em;margin-left:6px;"> %
     </div>
     <hr/>
     <div class="form-row">
         <label style="width:140px;" for="node-input-colorGraticule"><i class="fa fa-th"></i> Graticule</label>
         <input type="color" id="node-input-colorGraticule" style="width:4em;height:2em;padding:1px;cursor:pointer;">
+        <input type="number" id="node-input-opacityGraticule" min="0" max="100" step="1" style="width:4em;margin-left:6px;"> %
     </div>
     <div class="form-row">
         <label style="width:140px;" for="node-input-colorEquator"><i class="fa fa-minus"></i> Equator</label>
         <input type="color" id="node-input-colorEquator" style="width:4em;height:2em;padding:1px;cursor:pointer;">
+        <input type="number" id="node-input-opacityEquator" min="0" max="100" step="1" style="width:4em;margin-left:6px;"> %
     </div>
     <div class="form-row">
         <label style="width:140px;" for="node-input-colorPolarCircles"><i class="fa fa-minus"></i> Polar circles</label>
         <input type="color" id="node-input-colorPolarCircles" style="width:4em;height:2em;padding:1px;cursor:pointer;">
+        <input type="number" id="node-input-opacityPolarCircles" min="0" max="100" step="1" style="width:4em;margin-left:6px;"> %
     </div>
     <div class="form-row">
         <label style="width:140px;" for="node-input-latLineWidth"><i class="fa fa-arrows-h"></i> Lat. line width</label>
@@ -143,17 +155,26 @@
             qth:            { value: 'JJ00' },
             currentAzimuth: { value: 0 },
             targetAzimuth:  { value: 0 },
-            colorOcean:        { value: '#4a90c4' },
-            colorLand:         { value: '#c8b89a' },
-            colorLandOutline:  { value: '#8a7060' },
-            colorCurrent:      { value: '#00ccff' },
-            colorTarget:       { value: '#ff4400' },
-            colorAligned:      { value: '#ffffff' },
-            colorGraticule:    { value: '#444444' },
-            colorEquator:      { value: '#888888' },
-            colorPolarCircles: { value: '#888888' },
-            latLineWidth:      { value: 0.4 },
-            defaultZoom:       { value: 1.0 }
+            colorOcean:           { value: '#76acd6' },
+            colorLand:            { value: '#9e7e3d' },
+            colorLandOutline:     { value: '#5c402e' },
+            opacityLandOutline:   { value: 100 },
+            colorCurrent:         { value: '#001ef9' },
+            opacityCurrent:       { value: 100 },
+            colorTarget:          { value: '#ff4400' },
+            opacityTarget:        { value: 100 },
+            colorAligned:         { value: '#000000' },
+            opacityAligned:       { value: 100 },
+            colorHudBg:           { value: '#888888' },
+            opacityHudBg:         { value: 55 },
+            colorGraticule:       { value: '#444444' },
+            opacityGraticule:     { value: 40 },
+            colorEquator:         { value: '#555555' },
+            opacityEquator:       { value: 70 },
+            colorPolarCircles:    { value: '#555555' },
+            opacityPolarCircles:  { value: 55 },
+            latLineWidth:         { value: 0.4 },
+            defaultZoom:          { value: 1.0 }
         },
         inputs:  1,
         outputs: 1,
@@ -166,17 +187,26 @@
             }
 
             var DEFAULTS = {
-                colorOcean:        '#4a90c4',
-                colorLand:         '#c8b89a',
-                colorLandOutline:  '#8a7060',
-                colorCurrent:      '#00ccff',
-                colorTarget:       '#ff4400',
-                colorAligned:      '#ffffff',
-                colorGraticule:    '#444444',
-                colorEquator:      '#555555',
-                colorPolarCircles: '#555555',
-                latLineWidth:      0.4,
-                defaultZoom:       1.0
+                colorOcean:           '#76acd6',
+                colorLand:            '#9e7e3d',
+                colorLandOutline:     '#5c402e',
+                opacityLandOutline:   100,
+                colorCurrent:         '#001ef9',
+                opacityCurrent:       100,
+                colorTarget:          '#ff4400',
+                opacityTarget:        100,
+                colorAligned:         '#000000',
+                opacityAligned:       100,
+                colorHudBg:           '#000000',
+                opacityHudBg:         55,
+                colorGraticule:       '#444444',
+                opacityGraticule:     40,
+                colorEquator:         '#555555',
+                opacityEquator:       70,
+                colorPolarCircles:    '#555555',
+                opacityPolarCircles:  55,
+                latLineWidth:         0.4,
+                defaultZoom:          1.0
             };
 
             // Custom variable-step spinner for defaultZoom

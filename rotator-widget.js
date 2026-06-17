@@ -68,33 +68,55 @@ module.exports = function (RED) {
         function safeColor(value, fallback) {
             return (value && HEX_RE.test(value)) ? value : fallback;
         }
+        function safeOpacity(value, fallback) {
+            var n = parseFloat(value);
+            return (isFinite(n) && n >= 0 && n <= 100) ? Math.round(n) : fallback;
+        }
         var colors = {
-            ocean:        safeColor(config.colorOcean,        '#4a90c4'),
-            land:         safeColor(config.colorLand,         '#c8b89a'),
-            landOutline:  safeColor(config.colorLandOutline,  '#8a7060'),
-            current:      safeColor(config.colorCurrent,      '#00ccff'),
-            target:       safeColor(config.colorTarget,       '#ff4400'),
-            aligned:      safeColor(config.colorAligned,      '#ffffff'),
-            equator:      safeColor(config.colorEquator,      '#555555'),
-            polarCircles: safeColor(config.colorPolarCircles, '#555555'),
-            graticule:    safeColor(config.colorGraticule,    '#444444')
+            ocean:               safeColor(config.colorOcean,        '#76acd6'),
+            land:                safeColor(config.colorLand,         '#9e7e3d'),
+            landOutline:         safeColor(config.colorLandOutline,  '#5c402e'),
+            landOutlineOpacity:  safeOpacity(config.opacityLandOutline, 100),
+            current:             safeColor(config.colorCurrent,      '#001ef9'),
+            currentOpacity:      safeOpacity(config.opacityCurrent,  100),
+            target:              safeColor(config.colorTarget,       '#ff4400'),
+            targetOpacity:       safeOpacity(config.opacityTarget,   100),
+            aligned:             safeColor(config.colorAligned,      '#000000'),
+            alignedOpacity:      safeOpacity(config.opacityAligned,  100),
+            equator:             safeColor(config.colorEquator,      '#555555'),
+            equatorOpacity:      safeOpacity(config.opacityEquator,  70),
+            polarCircles:        safeColor(config.colorPolarCircles, '#555555'),
+            polarCirclesOpacity: safeOpacity(config.opacityPolarCircles, 55),
+            graticule:           safeColor(config.colorGraticule,    '#444444'),
+            graticuleOpacity:    safeOpacity(config.opacityGraticule, 40),
+            hudBg:               safeColor(config.colorHudBg,         '#888888'),
+            hudBgOpacity:        safeOpacity(config.opacityHudBg,      55)
         };
         var latLineWidth = Math.max(0.2, Math.min(5, parseFloat(config.latLineWidth) || 0.4));
         var defaultZoom  = Math.max(1.0, Math.min(20, parseFloat(config.defaultZoom)  || 1.0));
 
         // Build a JS object literal using single quotes so it embeds safely inside
         // the double-quoted ng-init HTML attribute (JSON.stringify would break it).
-        // Values are already validated as #rrggbb so no escaping is needed.
+        // Color strings are single-quoted; opacity values are plain numbers.
         var colorsLiteral = '{' +
-            "ocean:'"        + colors.ocean        + "'," +
-            "land:'"         + colors.land         + "'," +
-            "landOutline:'"  + colors.landOutline  + "'," +
-            "current:'"      + colors.current      + "'," +
-            "target:'"       + colors.target       + "'," +
-            "aligned:'"      + colors.aligned      + "'," +
-            "equator:'"      + colors.equator      + "'," +
-            "polarCircles:'" + colors.polarCircles + "'," +
-            "graticule:'"    + colors.graticule    + "'" +
+            "ocean:'"               + colors.ocean               + "'," +
+            "land:'"                + colors.land                + "'," +
+            "landOutline:'"         + colors.landOutline         + "'," +
+            "landOutlineOpacity:"   + colors.landOutlineOpacity  + "," +
+            "current:'"             + colors.current             + "'," +
+            "currentOpacity:"       + colors.currentOpacity      + "," +
+            "target:'"              + colors.target              + "'," +
+            "targetOpacity:"        + colors.targetOpacity       + "," +
+            "aligned:'"             + colors.aligned             + "'," +
+            "alignedOpacity:"       + colors.alignedOpacity      + "," +
+            "equator:'"             + colors.equator             + "'," +
+            "equatorOpacity:"       + colors.equatorOpacity      + "," +
+            "polarCircles:'"        + colors.polarCircles        + "'," +
+            "polarCirclesOpacity:"  + colors.polarCirclesOpacity + "," +
+            "graticule:'"           + colors.graticule           + "'," +
+            "graticuleOpacity:"     + colors.graticuleOpacity    + "," +
+            "hudBg:'"               + colors.hudBg               + "'," +
+            "hudBgOpacity:"         + colors.hudBgOpacity        + "" +
         '}';
 
         var widgetCleanup = ui.addWidget({
@@ -258,15 +280,22 @@ module.exports = function (RED) {
                     if (zoomAnimFrame) { cancelAnimationFrame(zoomAnimFrame); }
                 });
                 $scope.colors = {
-                    ocean:        '#4a90c4',
-                    land:         '#c8b89a',
-                    landOutline:  '#8a7060',
-                    current:      '#00ccff',
-                    target:       '#ff4400',
-                    aligned:      '#ffffff',
-                    equator:      '#555555',
-                    polarCircles: '#555555',
-                    graticule:    '#444444'
+                    ocean:               '#76acd6',
+                    land:                '#9e7e3d',
+                    landOutline:         '#5c402e',
+                    landOutlineOpacity:  100,
+                    current:             '#001ef9',
+                    currentOpacity:      100,
+                    target:              '#ff4400',
+                    targetOpacity:       100,
+                    aligned:             '#000000',
+                    alignedOpacity:      100,
+                    equator:             '#555555',
+                    equatorOpacity:      70,
+                    polarCircles:        '#555555',
+                    polarCirclesOpacity: 55,
+                    graticule:           '#444444',
+                    graticuleOpacity:    40
                 };
                 $scope.latLineWidth = 0.4;
 
@@ -392,7 +421,8 @@ module.exports = function (RED) {
                         .attr('d', pathGen)
                         .style('fill', C.land)
                         .style('stroke', C.landOutline)
-                        .style('stroke-width', (0.2 + Math.max(0, $scope.zoom - 1) * 0.06).toFixed(2) + 'px');
+                        .style('stroke-width', (0.2 + Math.max(0, $scope.zoom - 1) * 0.06).toFixed(2) + 'px')
+                        .style('stroke-opacity', C.landOutlineOpacity / 100);
 
                     // Country borders (shared edges only) – fade in as zoom increases
                     var borderOpacity = Math.max(0, Math.min(1, ($scope.zoom - 2) / 1.0));
@@ -408,14 +438,14 @@ module.exports = function (RED) {
                             .style('fill', 'none')
                             .style('stroke', C.landOutline)
                             .style('stroke-width', borderWidth + 'px')
-                            .style('opacity', borderOpacity);
+                            .style('opacity', borderOpacity * C.landOutlineOpacity / 100);
                     }
 
                     // State / province borders for large federal countries – fade in after 3×
                     var stateOpacity = Math.max(0, Math.min(1, ($scope.zoom - 2.5) / 1.5));
                     if (stateOpacity > 0 && $scope.admin1Data) {
                         mapG.append('g')
-                            .style('opacity', stateOpacity)
+                            .style('opacity', stateOpacity * C.landOutlineOpacity / 100)
                             .selectAll('path')
                             .data($scope.admin1Data.features)
                             .enter().append('path')
@@ -425,21 +455,21 @@ module.exports = function (RED) {
                             .style('stroke-width', '0.2px');
                     }
 
-                    // Graticule (10° lat/lon grid) – drawn after land, semitransparent
+                    // Graticule (20° lat/lon grid) – drawn after land, configurable opacity
                     mapG.append('path')
                         .datum(d3.geoGraticule().step([20, 20])())
                         .attr('d', pathGen)
                         .style('fill', 'none')
                         .style('stroke', C.graticule)
                         .style('stroke-width', '0.3px')
-                        .style('opacity', '0.25');
+                        .style('opacity', C.graticuleOpacity / 100);
 
                     // Significant latitude lines – drawn after land so they show on both ocean and land
                     var lw = $scope.latLineWidth;
                     var latLines = [
-                        { lat:   0,    color: C.equator,      width: lw * 1.2 },  // Equator
-                        { lat:  66.5,  color: C.polarCircles, width: lw },         // Arctic Circle
-                        { lat: -66.5,  color: C.polarCircles, width: lw }          // Antarctic Circle
+                        { lat:   0,    color: C.equator,      opacity: C.equatorOpacity / 100,      width: lw * 1.2 },
+                        { lat:  66.5,  color: C.polarCircles, opacity: C.polarCirclesOpacity / 100, width: lw },
+                        { lat: -66.5,  color: C.polarCircles, opacity: C.polarCirclesOpacity / 100, width: lw }
                     ];
                     latLines.forEach(function (l) {
                         var coords = [];
@@ -449,7 +479,8 @@ module.exports = function (RED) {
                             .attr('d', pathGen)
                             .style('fill', 'none')
                             .style('stroke', l.color)
-                            .style('stroke-width', l.width + 'px');
+                            .style('stroke-width', l.width + 'px')
+                            .style('opacity', l.opacity);
                     });
 
                     // ------ Degree tick marks ------
@@ -514,12 +545,14 @@ module.exports = function (RED) {
                             .attr('x2', cx + lineR * Math.sin(trad))
                             .attr('y2', cy - lineR * Math.cos(trad))
                             .attr('stroke', C.target)
+                            .attr('stroke-opacity', C.targetOpacity / 100)
                             .attr('stroke-width', 2)
                             .attr('marker-end', 'url(#' + tId + ')');
                     }
 
                     // Current azimuth
-                    var curColor = aligned ? C.aligned : C.current;
+                    var curColor   = aligned ? C.aligned : C.current;
+                    var curOpacity = aligned ? C.alignedOpacity / 100 : C.currentOpacity / 100;
                     var cId  = 'arrow-cur-' + $scope.$id;
                     arrowMarker(cId, curColor);
                     var crad = $scope.currentAzimuth * Math.PI / 180;
@@ -528,6 +561,7 @@ module.exports = function (RED) {
                         .attr('x2', cx + lineR * Math.sin(crad))
                         .attr('y2', cy - lineR * Math.cos(crad))
                         .attr('stroke', curColor)
+                        .attr('stroke-opacity', curOpacity)
                         .attr('stroke-width', 2.5)
                         .attr('marker-end', 'url(#' + cId + ')');
 
@@ -536,29 +570,51 @@ module.exports = function (RED) {
                         .attr('fill', '#222').attr('stroke', 'white').attr('stroke-width', 1.5);
 
                     // ------ HUD readout (top-left overlay) ------
-                    var hudLines = aligned
-                        ? [{ text: 'Az: ' + Math.round($scope.currentAzimuth) + '°', color: '#eee' }]
-                        : [
-                            { text: '▶ ' + Math.round($scope.currentAzimuth) + '°', color: '#7aadff' },
-                            { text: '◆ ' + Math.round($scope.targetAzimuth)  + '°', color: '#ff6666' }
-                          ];
+                    var hudPad = 6, hudH = 30;
+                    var hudBgColor = C.hudBg || '#000000';
+                    var hudBgAlpha = (C.hudBgOpacity != null ? C.hudBgOpacity : 55) / 100;
+                    // measure text width roughly: monospace ~9px per char at 15px
+                    var hudText, hudW;
+                    if (aligned) {
+                        hudText = Math.round($scope.currentAzimuth) + '°';
+                        hudW = hudText.length * 9 + hudPad * 2;
+                    } else {
+                        hudW = (String(Math.round($scope.currentAzimuth)).length + String(Math.round($scope.targetAzimuth)).length + 5) * 9 + hudPad * 2;
+                    }
+                    hudW = Math.max(hudW, 40);
 
-                    var hudPad = 5, hudLineH = 17, hudW = 80;
-                    var hudH2  = hudLines.length * hudLineH + hudPad * 2;
+                    // background rect — convert hex to rgba for SVG fill
+                    var hr = parseInt(hudBgColor.slice(1,3),16);
+                    var hg = parseInt(hudBgColor.slice(3,5),16);
+                    var hb = parseInt(hudBgColor.slice(5,7),16);
                     svg.append('rect')
                         .attr('x', 8).attr('y', 8)
-                        .attr('width', hudW).attr('height', hudH2)
-                        .attr('fill', 'rgba(0,0,0,0.55)')
+                        .attr('width', hudW).attr('height', hudH)
+                        .style('fill', 'rgba(' + hr + ',' + hg + ',' + hb + ',' + hudBgAlpha + ')')
                         .attr('rx', 4);
-                    hudLines.forEach(function (l, i) {
-                        svg.append('text')
-                            .attr('x', 8 + hudPad)
-                            .attr('y', 8 + hudPad + 12 + i * hudLineH)
-                            .attr('font-size', '12px')
-                            .attr('font-family', 'monospace')
-                            .attr('fill', l.color)
-                            .text(l.text);
-                    });
+
+                    var hudTextEl = svg.append('text')
+                        .attr('x', 8 + hudPad)
+                        .attr('y', 8 + hudPad + 13)
+                        .attr('font-size', '15px')
+                        .attr('font-family', 'monospace')
+                        .attr('dominant-baseline', 'auto');
+
+                    if (aligned) {
+                        hudTextEl.append('tspan')
+                            .style('fill', C.aligned)
+                            .text(Math.round($scope.currentAzimuth) + '°');
+                    } else {
+                        hudTextEl.append('tspan')
+                            .style('fill', C.current)
+                            .text(Math.round($scope.currentAzimuth) + '°');
+                        hudTextEl.append('tspan')
+                            .style('fill', C.aligned)
+                            .text(' ➜ ');
+                        hudTextEl.append('tspan')
+                            .style('fill', C.target)
+                            .text(Math.round($scope.targetAzimuth) + '°');
+                    }
 
                     // ------ Click to set target azimuth ------
                     svg.on('click', function (event) {
