@@ -101,7 +101,7 @@ module.exports = function (RED) {
         var defaultZoom  = Math.max(1.0, Math.min(20, parseFloat(config.defaultZoom)  || 1.0));
         var beamWidth    = Math.max(0,   Math.min(180, parseFloat(config.beamWidth)   || 30));
         var showLogo     = (config.showLogo === undefined) ? true : !!config.showLogo;
-        var showGrayline = !!config.showGrayline;
+        var showGrayline = (config.showGrayline === undefined) ? true : !!config.showGrayline;
         var gridMin      = Math.min(parseInt(config.width, 10)  || 6,
                                     parseInt(config.height, 10) || 6);
 
