@@ -101,6 +101,8 @@ module.exports = function (RED) {
         var defaultZoom  = Math.max(1.0, Math.min(20, parseFloat(config.defaultZoom)  || 1.0));
         var beamWidth    = Math.max(0,   Math.min(180, parseFloat(config.beamWidth)   || 30));
         var showLogo     = (config.showLogo === undefined) ? true : !!config.showLogo;
+        var gridMin      = Math.min(parseInt(config.width, 10)  || 6,
+                                    parseInt(config.height, 10) || 6);
 
         // Build a JS object literal using single quotes so it embeds safely inside
         // the double-quoted ng-init HTML attribute (JSON.stringify would break it).
@@ -136,7 +138,7 @@ module.exports = function (RED) {
             label:  config.label,
 
             format: '<div style="width:100%;height:100%;padding:0;margin:0;box-sizing:border-box;"' +
-                    ' ng-init="init(\'' + safeQth + '\',' + safeCurrent + ',' + safeTarget + ',' + colorsLiteral + ',' + latLineWidth + ',' + defaultZoom + ',' + beamWidth + ',' + showLogo + ')">' +
+                    ' ng-init="init(\'' + safeQth + '\',' + safeCurrent + ',' + safeTarget + ',' + colorsLiteral + ',' + latLineWidth + ',' + defaultZoom + ',' + beamWidth + ',' + showLogo + ',' + gridMin + ')">' +
                     '<svg id="rotator-{{$id}}" style="display:block;width:100%;height:100%;overflow:visible;"></svg>' +
                     '</div>',
 
@@ -387,11 +389,12 @@ module.exports = function (RED) {
                 $scope.latLineWidth = 0.4;
                 $scope.beamWidth    = 30;
                 $scope.showLogo     = true;
+                $scope.gridMin      = 6;
 
                 // ----------------------------------------------------------
                 // Called by ng-init with values from node config
                 // ----------------------------------------------------------
-                $scope.init = function (qth, currentAz, targetAz, colors, latLineWidth, defaultZoom, beamWidth, showLogo) {
+                $scope.init = function (qth, currentAz, targetAz, colors, latLineWidth, defaultZoom, beamWidth, showLogo, gridMin) {
                     $scope.qth            = qth || 'JJ00';
                     $scope.currentAzimuth = parseFloat(currentAz) || 0;
                     $scope.targetAzimuth  = parseFloat(targetAz)  || 0;
@@ -403,6 +406,7 @@ module.exports = function (RED) {
                     }
                     if (beamWidth != null) { $scope.beamWidth = parseFloat(beamWidth); }
                     if (showLogo != null) { $scope.showLogo = !!showLogo; }
+                    if (gridMin != null)  { $scope.gridMin  = parseInt(gridMin, 10) || 6; }
 
                     Promise.all([
                         loadScript('https://cdn.jsdelivr.net/npm/d3@7/dist/d3.min.js',
@@ -705,7 +709,7 @@ module.exports = function (RED) {
 
                     // ------ Ham2K logo (bottom-right) ------
                     if ($scope.showLogo) {
-                        var logoSize = 36;
+                        var logoSize = $scope.gridMin < 4 ? 24 : 36;
                         svg.append('image')
                             .attr('href', '/h2k-rotator/ham2k-square.svg')
                             .attr('x', W - logoSize - 8)
