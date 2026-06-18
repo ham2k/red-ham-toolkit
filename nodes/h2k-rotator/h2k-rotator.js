@@ -100,7 +100,7 @@ module.exports = function (RED) {
             graticuleOpacity:    safeOpacity(config.opacityGraticule, 40),
             hudBg:               safeColor(config.colorHudBg,         '#888888'),
             hudBgOpacity:        safeOpacity(config.opacityHudBg,      55),
-            dxDot:               safeColor(config.colorDxDot,         '#ffd400'),
+            dxDot:               safeColor(config.colorDxDot,         '#ff0000'),
             dxDotOpacity:        safeOpacity(config.opacityDxDot,     100)
         };
         var latLineWidth = Math.max(0.2, Math.min(5, parseFloat(config.latLineWidth) || 0.4));
@@ -423,7 +423,7 @@ module.exports = function (RED) {
                     polarCirclesOpacity: 55,
                     graticule:           '#444444',
                     graticuleOpacity:    40,
-                    dxDot:               '#ffd400',
+                    dxDot:               '#ff0000',
                     dxDotOpacity:        100
                 };
                 $scope.latLineWidth = 0.4;
