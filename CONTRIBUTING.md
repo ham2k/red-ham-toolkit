@@ -51,6 +51,28 @@ node-red
 Open the editor at <http://localhost:1880> and the dashboard at
 <http://localhost:1880/ui>.
 
+### Restarting after edits
+
+Node-RED loads node editor HTML (`registerType` / `oneditprepare`) at
+**startup** and bundles it, so edits to `*.html` are **not** picked up by a
+browser reload — Node-RED must be restarted. Use the helper script:
+
+```bash
+dev-tools/restart-node-red.sh
+```
+
+It stops any instance listening on the dashboard port, relaunches it
+detached, and waits until it is serving again. Override the port or log path
+with environment variables:
+
+```bash
+PORT=1881 dev-tools/restart-node-red.sh
+LOG=/tmp/my-node-red.log dev-tools/restart-node-red.sh
+```
+
+After it returns, hard-refresh the editor and dashboard browser tabs
+(**Cmd+Shift+R** / **Ctrl+Shift+R**).
+
 ## Installing the widget in Node-RED
 
 Once Node-RED is running with the linked package, the **rotator-widget** node
@@ -140,8 +162,12 @@ Import this JSON into Node-RED (**Menu → Import**) for a ready-made test harne
 
 | What changed | How to reload |
 |---|---|
-| `rotator-widget.js` (server-side logic) | Restart Node-RED, then re-deploy |
-| `rotator-widget.html` (editor UI or widget template) | Re-deploy in the editor, then hard-refresh the dashboard browser tab |
+| `nodes/h2k-rotator/h2k-rotator.js` (server-side logic) | Restart Node-RED (`dev-tools/restart-node-red.sh`), then re-deploy |
+| `nodes/h2k-rotator/h2k-rotator.html` (editor UI or widget template) | Restart Node-RED (`dev-tools/restart-node-red.sh`), then hard-refresh |
 | Both | Restart Node-RED + hard-refresh |
+
+> **Note:** Node-RED bundles the editor HTML at startup, so even template-only
+> changes need a restart — a browser reload alone won't pick them up. The
+> `dev-tools/restart-node-red.sh` script handles the restart for you.
 
 Hard-refresh: **Cmd+Shift+R** (Mac) / **Ctrl+Shift+R** (Windows/Linux).

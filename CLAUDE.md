@@ -39,6 +39,11 @@ indicators for the current and target azimuths of the antenna rotator.
 - The azimuth lines are straight radial lines from the map centre — correct because azimuthal equidistant projections preserve true bearings from the centre point.
 - Maidenhead-to-lat/lon conversion is implemented inline in the browser controller (no external library needed).
 
+## Development
+
+- Node code lives under `nodes/h2k-rotator/` (`h2k-rotator.js` server-side + browser controller, `h2k-rotator.html` editor panel). Shared assets are in `assets/`.
+- **Node-RED bundles the editor HTML at startup**, so edits to `h2k-rotator.html` (and server-side `h2k-rotator.js`) are NOT picked up by a browser reload — Node-RED must be restarted. Run `dev-tools/restart-node-red.sh` to stop and relaunch it, then hard-refresh the browser tabs. Override the port/log with `PORT=` / `LOG=` env vars.
+
 ## Future ideas (not yet implemented)
 
 - Accept a remote grid locator (`msg.dxGrid`) and auto-compute + overlay the beam heading to that station.
