@@ -1,52 +1,46 @@
-# node-red-contrib-rotator-widget
+# @ham2k/red-ham-tools
 
-A Node-RED Dashboard 1.0 widget for controlling and visualising antenna rotators.
+A collection of ham-radio tools (nodes/widgets) for Node-RED Dashboard.
 
-## Goals
+The package is designed to host **multiple** nodes. Each node lives in its own folder under
+`nodes/` and is registered independently in `package.json`.
 
-Display an azimuthal equidistant world map centred on the operator's QTH, with directional
-indicators for the current and target azimuths of the antenna rotator.
+## Nodes
 
-## Widget parameters (node config)
+| Node type | Folder | Description |
+|-----------|--------|-------------|
+| `h2k-rotator` | [`nodes/h2k-rotator/`](nodes/h2k-rotator/README.md) | Antenna rotator widget: azimuthal-equidistant world map with current/target azimuth indicators |
 
-| Parameter | Description |
-|-----------|-------------|
-| **QTH** | 4- or 6-character Maidenhead grid locator (e.g. `FN31` or `FN31pr`) — sets the map centre |
-| **Current Azimuth** | Default current azimuth in degrees (0–359); overridden at runtime via `msg` |
-| **Target Azimuth** | Default target azimuth in degrees (0–359); overridden at runtime via `msg` or user click |
+See each node's `README.md` for its parameters, inputs/outputs, behaviour, and node-specific
+notes.
 
-## Inputs / Outputs
+## Repository layout
 
-**Inputs** (Node-RED messages flowing in):
-- `msg.payload` *(number)* — current azimuth in degrees (shorthand convention)
-- `msg.currentAzimuth` *(number)* — current azimuth in degrees
-- `msg.targetAzimuth` *(number)* — target azimuth in degrees
+```
+package.json                       node-red.nodes map (one entry per node)
+assets/                            shared static assets (e.g. ham2k-square.svg)
+dev-tools/                         local development helpers
+  restart-node-red.sh              stop + relaunch Node-RED
+nodes/
+  h2k-rotator/
+    h2k-rotator.js                 server-side node + serialised browser controller
+    h2k-rotator.html              editor config panel + help
+    README.md                      node documentation
+    data/                          per-node local data overrides (optional)
+```
 
-**Outputs** (emitted when user clicks the map):
-- `msg.payload` *(number)* — selected target azimuth in degrees
-- `msg.topic` — `"targetAzimuth"`
+## Adding a new node
 
-## Display logic
-
-- **Misaligned (> 5° difference):** current azimuth shown in blue, target in red.
-- **Aligned (≤ 5° difference):** single black indicator; target line hidden.
-- A small HUD overlay (top-left of the map) always shows numeric azimuth values.
-
-## Technical notes
-
-- Targets **node-red-dashboard 1.0** (`node-red-dashboard` npm package; Dashboard 2.0 / `@flowfuse/node-red-dashboard` is out of scope for now).
-- The map is rendered with **D3.js v7** (`geoAzimuthalEquidistant` projection) + **topojson-client v3** + **world-atlas 110m**, all loaded from jsDelivr CDN at first render. An internet connection is required on the browser side.
-- The azimuth lines are straight radial lines from the map centre — correct because azimuthal equidistant projections preserve true bearings from the centre point.
-- Maidenhead-to-lat/lon conversion is implemented inline in the browser controller (no external library needed).
+1. Create `nodes/<node-type>/<node-type>.{js,html}`.
+2. Add it to the `node-red.nodes` map in `package.json`.
+3. Add a `nodes/<node-type>/README.md` documenting it, and list it in the table above.
+4. Serve any per-node HTTP routes/assets under a `/<node-type>/…` path prefix.
 
 ## Development
 
-- Node code lives under `nodes/h2k-rotator/` (`h2k-rotator.js` server-side + browser controller, `h2k-rotator.html` editor panel). Shared assets are in `assets/`.
-- **Node-RED bundles the editor HTML at startup**, so edits to `h2k-rotator.html` (and server-side `h2k-rotator.js`) are NOT picked up by a browser reload — Node-RED must be restarted. Run `dev-tools/restart-node-red.sh` to stop and relaunch it, then hard-refresh the browser tabs. Override the port/log with `PORT=` / `LOG=` env vars.
-
-## Future ideas (not yet implemented)
-
-- Accept a remote grid locator (`msg.dxGrid`) and auto-compute + overlay the beam heading to that station.
-- Bundle the world map data locally to remove the CDN dependency.
-- Support Dashboard 2.0 (`@flowfuse/node-red-dashboard`).
-- Redraw on widget resize (ResizeObserver).
+- **Node-RED bundles the editor HTML at startup**, so edits to a node's `*.html` (and its
+  server-side `*.js`) are NOT picked up by a browser reload — Node-RED must be restarted. Run
+  `dev-tools/restart-node-red.sh` to stop and relaunch it, then hard-refresh the browser tabs.
+  Override the port/log with `PORT=` / `LOG=` env vars.
+- See [CONTRIBUTING.md](CONTRIBUTING.md) for setup (`npm link`), running Node-RED, and the
+  reload workflow.

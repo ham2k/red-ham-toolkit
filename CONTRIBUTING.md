@@ -1,5 +1,10 @@
 # Contributing
 
+This is the `@ham2k/red-ham-tools` package, which hosts multiple Node-RED Dashboard nodes
+under `nodes/`. This document covers package-wide setup and the development workflow. For
+node-specific usage and testing, see each node's `README.md` (e.g.
+[`nodes/h2k-rotator/README.md`](nodes/h2k-rotator/README.md)).
+
 ## Prerequisites
 
 - [Node.js](https://nodejs.org/) 18 or later
@@ -18,29 +23,28 @@ npm install node-red-dashboard
 
 > **Note on `npm link` and module resolution:** when a package is linked, Node.js
 > resolves `require()` calls from the package's real directory, not from
-> `~/.node-red/node_modules/`. The node loader in `rotator-widget.js` handles this
-> by falling back to `~/.node-red/node_modules/node-red-dashboard` automatically,
-> so no extra steps are needed — just make sure `node-red-dashboard` is installed
-> in your Node-RED user directory (see Prerequisites above).
+> `~/.node-red/node_modules/`. The node loaders handle this by falling back to
+> `~/.node-red/node_modules/node-red-dashboard` automatically, so no extra steps are
+> needed — just make sure `node-red-dashboard` is installed in your Node-RED user
+> directory (see Prerequisites above).
 
 Clone the repo and link it into your Node-RED user directory so Node-RED picks up
 changes without reinstalling:
 
 ```bash
 git clone <repo-url>
-cd node-red-contrib-rotator-widget
+cd red-ham-tools
 
 # Register the package globally so npm link can find it
 npm link
 
 # Link it into Node-RED's node_modules
 cd ~/.node-red
-npm link node-red-contrib-rotator-widget
+npm link @ham2k/red-ham-tools
 ```
 
-After linking, any edits to the source files are reflected immediately on the
-next Node-RED restart (server-side changes in `rotator-widget.js`) or on the
-next browser reload (front-end changes in `rotator-widget.html`).
+After linking, edits to the source files are picked up the next time Node-RED is
+restarted (see below).
 
 ## Running Node-RED
 
@@ -53,17 +57,17 @@ Open the editor at <http://localhost:1880> and the dashboard at
 
 ### Restarting after edits
 
-Node-RED loads node editor HTML (`registerType` / `oneditprepare`) at
-**startup** and bundles it, so edits to `*.html` are **not** picked up by a
-browser reload — Node-RED must be restarted. Use the helper script:
+Node-RED loads node editor HTML (`registerType` / `oneditprepare`) at **startup** and
+bundles it, so edits to a node's `*.html` are **not** picked up by a browser reload —
+Node-RED must be restarted. The same applies to server-side `*.js` changes. Use the
+helper script:
 
 ```bash
 dev-tools/restart-node-red.sh
 ```
 
-It stops any instance listening on the dashboard port, relaunches it
-detached, and waits until it is serving again. Override the port or log path
-with environment variables:
+It stops any instance listening on the dashboard port, relaunches it detached, and waits
+until it is serving again. Override the port or log path with environment variables:
 
 ```bash
 PORT=1881 dev-tools/restart-node-red.sh
@@ -73,101 +77,17 @@ LOG=/tmp/my-node-red.log dev-tools/restart-node-red.sh
 After it returns, hard-refresh the editor and dashboard browser tabs
 (**Cmd+Shift+R** / **Ctrl+Shift+R**).
 
-## Installing the widget in Node-RED
-
-Once Node-RED is running with the linked package, the **rotator-widget** node
-appears in the **dashboard** section of the node palette on the left.
-
-1. Drag a `rotator-widget` node onto the canvas.
-2. Double-click it to open the config panel.
-3. Select (or create) a **Group** under a Dashboard tab.
-4. Set **QTH** to your Maidenhead grid locator (4 or 6 characters, e.g. `FN31`).
-5. Optionally set default **Current Az.** and **Target Az.** values.
-6. Set **Size** — a square of at least 6×6 is recommended (the map needs room).
-7. Click **Done**, then **Deploy**.
-8. Open the dashboard at <http://localhost:1880/ui> to see the widget.
-
-> **Note:** The widget fetches D3.js, topojson-client, and world map data from
-> jsDelivr CDN on first load. The browser running the dashboard needs outbound
-> internet access.
-
-## Testing the widget manually
-
-### Sending azimuth updates via Inject nodes
-
-Wire an **inject** node to the `rotator-widget` input.
-
-| Test | `msg` properties to set | Expected result |
-|------|--------------------------|-----------------|
-| Set current azimuth | `msg.payload = 90` (number) | Blue arrow points East |
-| Set current explicitly | `msg.currentAzimuth = 180` | Blue arrow points South |
-| Set target | `msg.targetAzimuth = 45` | Red arrow points NE |
-| Aligned (≤ 5°) | `msg.currentAzimuth = 100`, `msg.targetAzimuth = 102` | Single black arrow, no red line |
-| Misaligned (> 5°) | `msg.currentAzimuth = 0`, `msg.targetAzimuth = 90` | Blue (N) and red (E) arrows |
-
-### Testing user interaction (click to set target)
-
-Click anywhere inside the map circle. The widget should:
-
-1. Immediately redraw the target azimuth line (red) pointing toward the click.
-2. Emit a message on its output: `{ payload: <degrees>, topic: "targetAzimuth" }`.
-
-Wire a **debug** node to the output to verify the emitted value.
-
-### Quick test flow
-
-Import this JSON into Node-RED (**Menu → Import**) for a ready-made test harness:
-
-```json
-[
-  {
-    "id": "inject-current",
-    "type": "inject",
-    "name": "Current 45°",
-    "props": [{ "p": "currentAzimuth", "v": "45", "vt": "num" }],
-    "wires": [["rotator-node"]]
-  },
-  {
-    "id": "inject-target",
-    "type": "inject",
-    "name": "Target 270°",
-    "props": [{ "p": "targetAzimuth", "v": "270", "vt": "num" }],
-    "wires": [["rotator-node"]]
-  },
-  {
-    "id": "rotator-node",
-    "type": "rotator-widget",
-    "name": "My Rotator",
-    "qth": "FN31",
-    "currentAzimuth": 0,
-    "targetAzimuth": 0,
-    "width": 6,
-    "height": 6,
-    "wires": [["debug-out"]]
-  },
-  {
-    "id": "debug-out",
-    "type": "debug",
-    "name": "Rotator output",
-    "active": true,
-    "wires": []
-  }
-]
-```
-
-> The flow above omits `group` and `tab` IDs — assign a dashboard group after
-> importing to make it appear on the dashboard.
-
-## Reloading after edits
-
 | What changed | How to reload |
 |---|---|
-| `nodes/h2k-rotator/h2k-rotator.js` (server-side logic) | Restart Node-RED (`dev-tools/restart-node-red.sh`), then re-deploy |
-| `nodes/h2k-rotator/h2k-rotator.html` (editor UI or widget template) | Restart Node-RED (`dev-tools/restart-node-red.sh`), then hard-refresh |
+| A node's server-side `*.js` | Restart Node-RED (`dev-tools/restart-node-red.sh`), then re-deploy |
+| A node's editor/widget `*.html` | Restart Node-RED (`dev-tools/restart-node-red.sh`), then hard-refresh |
 | Both | Restart Node-RED + hard-refresh |
 
-> **Note:** Node-RED bundles the editor HTML at startup, so even template-only
-> changes need a restart — a browser reload alone won't pick them up. The
-> `dev-tools/restart-node-red.sh` script handles the restart for you.
+## Working on a specific node
 
-Hard-refresh: **Cmd+Shift+R** (Mac) / **Ctrl+Shift+R** (Windows/Linux).
+Each node is self-contained under `nodes/<node-type>/`. For how to install, configure, and
+manually test a node, see its `README.md`:
+
+- [`nodes/h2k-rotator/README.md`](nodes/h2k-rotator/README.md) — H2K Rotator widget
+
+To add a new node, see the "Adding a new node" section in [CLAUDE.md](CLAUDE.md).
