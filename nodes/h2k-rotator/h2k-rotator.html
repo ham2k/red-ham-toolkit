@@ -33,6 +33,11 @@
                placeholder="0" style="width:6em;"> &deg;
     </div>
     <div class="form-row">
+        <label for="node-input-dxGrid"><i class="fa fa-map-pin"></i> DX Grid</label>
+        <input type="text" id="node-input-dxGrid" placeholder="e.g. IO91 or IO91wm" maxlength="6"
+               style="width:8em; text-transform:uppercase;">
+    </div>
+    <div class="form-row">
         <label for="node-input-beamWidth"><i class="fa fa-arrows-h"></i> Beam width</label>
         <input type="number" id="node-input-beamWidth" min="0" max="180" step="1"
                placeholder="30" style="width:5em;"> &deg;
@@ -63,6 +68,11 @@
         <label style="width:140px;" for="node-input-colorHudBg"><i class="fa fa-info-circle"></i> HUD background</label>
         <input type="color" id="node-input-colorHudBg" style="width:4em;height:2em;padding:1px;cursor:pointer;">
         <input type="number" id="node-input-opacityHudBg" min="0" max="100" step="1" style="width:4em;margin-left:6px;"> %
+    </div>
+    <div class="form-row">
+        <label style="width:140px;" for="node-input-colorDxDot"><i class="fa fa-map-pin"></i> DX grid dot</label>
+        <input type="color" id="node-input-colorDxDot" style="width:4em;height:2em;padding:1px;cursor:pointer;">
+        <input type="number" id="node-input-opacityDxDot" min="0" max="100" step="1" style="width:4em;margin-left:6px;"> %
     </div>
     <hr/>
     <div class="form-row">
@@ -146,9 +156,12 @@
         <dd>Current azimuth in degrees. Can be combined with <code>targetAzimuth</code>.</dd>
         <dt>targetAzimuth <span class="property-type">number</span></dt>
         <dd>Target azimuth in degrees. Can be combined with <code>currentAzimuth</code>.</dd>
-        <dt>topic <span class="property-type">string</span> + payload <span class="property-type">number</span></dt>
-        <dd>If <code>topic</code> is <code>"currentAzimuth"</code> or <code>"targetAzimuth"</code>,
-            <code>payload</code> sets that value (one per message).</dd>
+        <dt>dxGrid <span class="property-type">string</span></dt>
+        <dd>Maidenhead grid of a DX station; shows a coloured dot on the map. Empty string clears it.</dd>
+        <dt>topic <span class="property-type">string</span> + payload</dt>
+        <dd>If <code>topic</code> is <code>"currentAzimuth"</code>, <code>"targetAzimuth"</code>
+            (number) or <code>"dxGrid"</code> (string), <code>payload</code> sets that value
+            (one per message).</dd>
         <dt>payload <span class="property-type">number</span></dt>
         <dd>A bare numeric payload (no recognised topic) is treated as the current azimuth.</dd>
     </dl>
@@ -193,6 +206,7 @@
             qth:            { value: 'JJ00' },
             currentAzimuth: { value: 0 },
             targetAzimuth:  { value: 0 },
+            dxGrid:         { value: '' },
             colorOcean:           { value: '#76acd6' },
             colorLand:            { value: '#9e7e3d' },
             colorLandOutline:     { value: '#5c402e' },
@@ -205,6 +219,8 @@
             opacityAligned:       { value: 100 },
             colorHudBg:           { value: '#888888' },
             opacityHudBg:         { value: 55 },
+            colorDxDot:           { value: '#ffd400' },
+            opacityDxDot:         { value: 100 },
             colorGraticule:       { value: '#444444' },
             opacityGraticule:     { value: 40 },
             colorEquator:         { value: '#555555' },
@@ -248,8 +264,10 @@
                 opacityTarget:        100,
                 colorAligned:         '#000000',
                 opacityAligned:       100,
-                colorHudBg:           '#000000',
+                colorHudBg:           '#888888',
                 opacityHudBg:         55,
+                colorDxDot:           '#ffd400',
+                opacityDxDot:         100,
                 colorGraticule:       '#444444',
                 opacityGraticule:     40,
                 colorEquator:         '#555555',

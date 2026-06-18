@@ -16,6 +16,7 @@ indicators for the current and target azimuths of the antenna rotator.
 | **QTH** | 4- or 6-character Maidenhead grid locator (e.g. `FN31` or `FN31pr`) — sets the map centre |
 | **Current Azimuth** | Default current azimuth in degrees (0–359); overridden at runtime via `msg` |
 | **Target Azimuth** | Default target azimuth in degrees (0–359); overridden at runtime via `msg` or user click |
+| **DX Grid** | Maidenhead grid of a DX station; shows a coloured dot at that position (overridable via `msg`) |
 | **Beam width** | Beamwidth in degrees of the wedge drawn around the current azimuth (0 hides it) |
 | **Colors & Styles** | Per-element colours and opacities (azimuth lines, HUD, map, graticule); collapsed by default |
 | **Advanced Settings** | Default zoom, show/hide the Ham2K logo, show/hide the grayline; collapsed by default |
@@ -26,6 +27,8 @@ indicators for the current and target azimuths of the antenna rotator.
 - `msg.payload` *(number)* — current azimuth in degrees (shorthand convention)
 - `msg.currentAzimuth` *(number)* — current azimuth in degrees
 - `msg.targetAzimuth` *(number)* — target azimuth in degrees
+- `msg.dxGrid` *(string)* — Maidenhead grid of a DX station to mark (empty string clears it)
+- `{ topic, payload }` — `topic` of `"currentAzimuth"`/`"targetAzimuth"` (number) or `"dxGrid"` (string)
 
 **Outputs** (emitted whenever the target azimuth changes — by map click or by an incoming
 message that changes it; value-change only, so wiring the output back to the input won't loop):

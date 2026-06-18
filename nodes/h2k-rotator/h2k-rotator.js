@@ -67,6 +67,10 @@ module.exports = function (RED) {
             .toUpperCase();
         var safeCurrent = isFinite(parseFloat(config.currentAzimuth)) ? parseFloat(config.currentAzimuth) : 0;
         var safeTarget  = isFinite(parseFloat(config.targetAzimuth))  ? parseFloat(config.targetAzimuth)  : 0;
+        var safeDxGrid  = (config.dxGrid || '')
+            .replace(/[^A-Za-z0-9]/g, '')
+            .substring(0, 6)
+            .toUpperCase();
 
         // Allow only #rrggbb hex colors to prevent injection via the ng-init string
         var HEX_RE = /^#[0-9a-fA-F]{6}$/;
@@ -95,7 +99,9 @@ module.exports = function (RED) {
             graticule:           safeColor(config.colorGraticule,    '#444444'),
             graticuleOpacity:    safeOpacity(config.opacityGraticule, 40),
             hudBg:               safeColor(config.colorHudBg,         '#888888'),
-            hudBgOpacity:        safeOpacity(config.opacityHudBg,      55)
+            hudBgOpacity:        safeOpacity(config.opacityHudBg,      55),
+            dxDot:               safeColor(config.colorDxDot,         '#ffd400'),
+            dxDotOpacity:        safeOpacity(config.opacityDxDot,     100)
         };
         var latLineWidth = Math.max(0.2, Math.min(5, parseFloat(config.latLineWidth) || 0.4));
         var defaultZoom  = Math.max(1.0, Math.min(20, parseFloat(config.defaultZoom)  || 1.0));
@@ -126,7 +132,9 @@ module.exports = function (RED) {
             "graticule:'"           + colors.graticule           + "'," +
             "graticuleOpacity:"     + colors.graticuleOpacity    + "," +
             "hudBg:'"               + colors.hudBg               + "'," +
-            "hudBgOpacity:"         + colors.hudBgOpacity        + "" +
+            "hudBgOpacity:"         + colors.hudBgOpacity        + "," +
+            "dxDot:'"               + colors.dxDot               + "'," +
+            "dxDotOpacity:"         + colors.dxDotOpacity        + "" +
         '}';
 
         var widgetCleanup = ui.addWidget({
@@ -139,7 +147,7 @@ module.exports = function (RED) {
             label:  config.label,
 
             format: '<div style="width:100%;height:100%;padding:0;margin:0;box-sizing:border-box;"' +
-                    ' ng-init="init(\'' + safeQth + '\',' + safeCurrent + ',' + safeTarget + ',' + colorsLiteral + ',' + latLineWidth + ',' + defaultZoom + ',' + beamWidth + ',' + showLogo + ',' + gridMin + ',' + showGrayline + ')">' +
+                    ' ng-init="init(\'' + safeQth + '\',' + safeCurrent + ',' + safeTarget + ',' + colorsLiteral + ',' + latLineWidth + ',' + defaultZoom + ',' + beamWidth + ',' + showLogo + ',' + gridMin + ',' + showGrayline + ',\'' + safeDxGrid + '\')">' +
                     '<svg id="rotator-{{$id}}" style="display:block;width:100%;height:100%;overflow:visible;"></svg>' +
                     '</div>',
 
@@ -156,6 +164,11 @@ module.exports = function (RED) {
                     if (!isFinite(n)) return null;
                     return ((n % 360) + 360) % 360;
                 }
+                // Sanitise a Maidenhead grid string; '' clears the marker
+                function grid(v) {
+                    if (v == null) return null;
+                    return String(v).replace(/[^A-Za-z0-9]/g, '').substring(0, 6).toUpperCase();
+                }
 
                 // --- Topic routing (single value per message): { topic, payload } ---
                 // Mirrors the node's own output shape, so it composes with itself and
@@ -166,17 +179,21 @@ module.exports = function (RED) {
                 } else if (msg.topic === 'targetAzimuth') {
                     var tt = az(msg.payload);
                     if (tt !== null) out.targetAzimuth = tt;
+                } else if (msg.topic === 'dxGrid') {
+                    var tg = grid(msg.payload);
+                    if (tg !== null) out.dxGrid = tg;
                 } else if (typeof msg.payload === 'number') {
                     // Bare-payload shorthand → current azimuth
                     var tp = az(msg.payload);
                     if (tp !== null) out.currentAzimuth = tp;
                 }
 
-                // --- Named properties always win and can set BOTH at once ---
+                // --- Named properties always win and can set several at once ---
                 var nc = az(msg.currentAzimuth);
                 if (msg.currentAzimuth !== undefined && nc !== null) out.currentAzimuth = nc;
                 var nt = az(msg.targetAzimuth);
                 if (msg.targetAzimuth !== undefined && nt !== null) out.targetAzimuth = nt;
+                if (msg.dxGrid !== undefined) out.dxGrid = grid(msg.dxGrid);
 
                 return { msg: out };
             },
@@ -245,6 +262,7 @@ module.exports = function (RED) {
                 $scope.qth            = 'JJ00';
                 $scope.currentAzimuth = 0;
                 $scope.targetAzimuth  = 0;
+                $scope.dxGrid         = '';
                 $scope.zoom        = 1.0;
                 $scope.targetZoom  = 1.0;
                 $scope.defaultZoom = 1.0;
@@ -404,7 +422,9 @@ module.exports = function (RED) {
                     polarCircles:        '#555555',
                     polarCirclesOpacity: 55,
                     graticule:           '#444444',
-                    graticuleOpacity:    40
+                    graticuleOpacity:    40,
+                    dxDot:               '#ffd400',
+                    dxDotOpacity:        100
                 };
                 $scope.latLineWidth = 0.4;
                 $scope.beamWidth    = 30;
@@ -415,10 +435,11 @@ module.exports = function (RED) {
                 // ----------------------------------------------------------
                 // Called by ng-init with values from node config
                 // ----------------------------------------------------------
-                $scope.init = function (qth, currentAz, targetAz, colors, latLineWidth, defaultZoom, beamWidth, showLogo, gridMin, showGrayline) {
+                $scope.init = function (qth, currentAz, targetAz, colors, latLineWidth, defaultZoom, beamWidth, showLogo, gridMin, showGrayline, dxGrid) {
                     $scope.qth            = qth || 'JJ00';
                     $scope.currentAzimuth = parseFloat(currentAz) || 0;
                     $scope.targetAzimuth  = parseFloat(targetAz)  || 0;
+                    if (dxGrid != null) { $scope.dxGrid = String(dxGrid).toUpperCase(); }
                     if (colors && typeof colors === 'object') { $scope.colors = colors; }
                     if (latLineWidth) { $scope.latLineWidth = parseFloat(latLineWidth); }
                     if (defaultZoom)  {
@@ -663,6 +684,29 @@ module.exports = function (RED) {
                             .text(c[0]);
                     });
 
+                    // ------ DX grid marker ------
+                    // A coloured dot at the DX station's grid square, clipped to the globe.
+                    if ($scope.dxGrid && $scope.dxGrid.length >= 4) {
+                        var dxLatLon = maidenheadToLatLon($scope.dxGrid);
+                        if (dxLatLon && isFinite(dxLatLon[0]) && isFinite(dxLatLon[1])) {
+                            var dxXY = projection([dxLatLon[1], dxLatLon[0]]);
+                            // projection() returns null when the point is clipped (back of globe)
+                            if (dxXY) {
+                                var dxG = svg.append('g').attr('clip-path', 'url(#' + clipId + ')');
+                                dxG.append('circle')
+                                    .attr('cx', dxXY[0]).attr('cy', dxXY[1]).attr('r', 5)
+                                    .style('fill', C.dxDot)
+                                    .style('fill-opacity', (C.dxDotOpacity != null ? C.dxDotOpacity : 100) / 100)
+                                    .style('stroke', '#000')
+                                    .style('stroke-width', 1)
+                                    .style('stroke-opacity', (C.dxDotOpacity != null ? C.dxDotOpacity : 100) / 100)
+                                    .style('pointer-events', 'none')
+                                  .append('title')
+                                    .text('DX: ' + $scope.dxGrid);
+                            }
+                        }
+                    }
+
                     // ------ Azimuth lines ------
                     // Angular difference between current and target (shortest arc)
                     var diff = Math.abs(
@@ -862,6 +906,10 @@ module.exports = function (RED) {
                         if (newTarget !== $scope.targetAzimuth) { targetChanged = true; }
                         $scope.targetAzimuth = newTarget;
                         $scope.alignedSince = null;
+                        changed = true;
+                    }
+                    if (msg.dxGrid !== undefined) {
+                        $scope.dxGrid = (msg.dxGrid == null) ? '' : String(msg.dxGrid).toUpperCase();
                         changed = true;
                     }
                     if (changed) $scope.drawMap();
