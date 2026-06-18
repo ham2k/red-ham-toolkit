@@ -2,6 +2,12 @@
      Node editor config panel
      ============================================================ -->
 <script type="text/x-red" data-template-name="h2k-rotator">
+    <style>
+        .rotator-field-hint code {
+            font-size: inherit;
+            padding: 0 2px;
+        }
+    </style>
     <div class="form-row">
         <label for="node-input-group"><i class="fa fa-table"></i> Group</label>
         <input type="text" id="node-input-group">
@@ -27,7 +33,7 @@
         <input type="number" id="node-input-currentAzimuth" min="0" max="359" step="1"
                placeholder="0" style="width:6em;"> &deg;
     </div>
-    <div style="margin-left:110px;margin-bottom:8px;font-size:11px;color:#999;">
+    <div class="rotator-field-hint" style="margin-left:110px;margin-bottom:8px;font-size:11px;color:#999;">
         Default value. Set at runtime via <code>msg.currentAzimuth</code>,
         <code>msg.payload</code>, or topic <code>currentAzimuth</code>.
     </div>
@@ -36,7 +42,7 @@
         <input type="number" id="node-input-targetAzimuth" min="0" max="359" step="1"
                placeholder="0" style="width:6em;"> &deg;
     </div>
-    <div style="margin-left:110px;margin-bottom:8px;font-size:11px;color:#999;">
+    <div class="rotator-field-hint" style="margin-left:110px;margin-bottom:8px;font-size:11px;color:#999;">
         Default value. Set at runtime via <code>msg.targetAzimuth</code> or topic
         <code>targetAzimuth</code>; also by clicking the map.
     </div>
@@ -45,7 +51,7 @@
         <input type="text" id="node-input-dxGrid" placeholder="e.g. IO91 or IO91wm" maxlength="6"
                style="width:8em; text-transform:uppercase;">
     </div>
-    <div style="margin-left:110px;margin-bottom:8px;font-size:11px;color:#999;">
+    <div class="rotator-field-hint" style="margin-left:110px;margin-bottom:8px;font-size:11px;color:#999;">
         Maidenhead grid of a DX station to mark. Set at runtime via
         <code>msg.dxGrid</code> or topic <code>dxGrid</code> (empty clears it).
     </div>
