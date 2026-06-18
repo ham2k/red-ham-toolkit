@@ -139,14 +139,20 @@
        directional indicators for the current and target azimuths.</p>
 
     <h3>Inputs</h3>
+    <p>Azimuths may be supplied three ways; values are normalised to 0–359.
+       A single message may carry both current and target.</p>
     <dl class="message-properties">
-        <dt>payload <span class="property-type">number</span></dt>
-        <dd>Current azimuth in degrees (0–359). Short-hand for <code>msg.currentAzimuth</code>.</dd>
         <dt>currentAzimuth <span class="property-type">number</span></dt>
-        <dd>Current azimuth in degrees (0–359).</dd>
+        <dd>Current azimuth in degrees. Can be combined with <code>targetAzimuth</code>.</dd>
         <dt>targetAzimuth <span class="property-type">number</span></dt>
-        <dd>Target azimuth in degrees (0–359).</dd>
+        <dd>Target azimuth in degrees. Can be combined with <code>currentAzimuth</code>.</dd>
+        <dt>topic <span class="property-type">string</span> + payload <span class="property-type">number</span></dt>
+        <dd>If <code>topic</code> is <code>"currentAzimuth"</code> or <code>"targetAzimuth"</code>,
+            <code>payload</code> sets that value (one per message).</dd>
+        <dt>payload <span class="property-type">number</span></dt>
+        <dd>A bare numeric payload (no recognised topic) is treated as the current azimuth.</dd>
     </dl>
+    <p>Named properties take precedence over the topic/payload forms when both are present.</p>
 
     <h3>Outputs</h3>
     <dl class="message-properties">

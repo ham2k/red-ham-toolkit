@@ -150,16 +150,34 @@ module.exports = function (RED) {
 
             beforeEmit: function (msg) {
                 var out = {};
-                // msg.payload is treated as current azimuth (common Node-RED convention)
-                if (typeof msg.payload === 'number' && isFinite(msg.payload)) {
-                    out.currentAzimuth = msg.payload;
+                // Parse + normalise an angle to [0, 360); returns null if invalid
+                function az(v) {
+                    var n = parseFloat(v);
+                    if (!isFinite(n)) return null;
+                    return ((n % 360) + 360) % 360;
                 }
-                if (msg.currentAzimuth !== undefined && isFinite(parseFloat(msg.currentAzimuth))) {
-                    out.currentAzimuth = parseFloat(msg.currentAzimuth);
+
+                // --- Topic routing (single value per message): { topic, payload } ---
+                // Mirrors the node's own output shape, so it composes with itself and
+                // with MQTT/rig sources that emit { topic, payload }.
+                if (msg.topic === 'currentAzimuth') {
+                    var tc = az(msg.payload);
+                    if (tc !== null) out.currentAzimuth = tc;
+                } else if (msg.topic === 'targetAzimuth') {
+                    var tt = az(msg.payload);
+                    if (tt !== null) out.targetAzimuth = tt;
+                } else if (typeof msg.payload === 'number') {
+                    // Bare-payload shorthand → current azimuth
+                    var tp = az(msg.payload);
+                    if (tp !== null) out.currentAzimuth = tp;
                 }
-                if (msg.targetAzimuth !== undefined && isFinite(parseFloat(msg.targetAzimuth))) {
-                    out.targetAzimuth = parseFloat(msg.targetAzimuth);
-                }
+
+                // --- Named properties always win and can set BOTH at once ---
+                var nc = az(msg.currentAzimuth);
+                if (msg.currentAzimuth !== undefined && nc !== null) out.currentAzimuth = nc;
+                var nt = az(msg.targetAzimuth);
+                if (msg.targetAzimuth !== undefined && nt !== null) out.targetAzimuth = nt;
+
                 return { msg: out };
             },
 
