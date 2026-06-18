@@ -22,20 +22,32 @@
         <input type="text" id="node-input-qth" placeholder="e.g. FN31 or FN31pr" maxlength="6"
                style="width:8em; text-transform:uppercase;">
     </div>
-    <div class="form-row">
+    <div class="form-row" style="margin-bottom:2px;">
         <label for="node-input-currentAzimuth"><i class="fa fa-compass"></i> Current Az.</label>
         <input type="number" id="node-input-currentAzimuth" min="0" max="359" step="1"
                placeholder="0" style="width:6em;"> &deg;
     </div>
-    <div class="form-row">
+    <div style="margin-left:110px;margin-bottom:8px;font-size:11px;color:#999;">
+        Default value. Set at runtime via <code>msg.currentAzimuth</code>,
+        <code>msg.payload</code>, or topic <code>currentAzimuth</code>.
+    </div>
+    <div class="form-row" style="margin-bottom:2px;">
         <label for="node-input-targetAzimuth"><i class="fa fa-crosshairs"></i> Target Az.</label>
         <input type="number" id="node-input-targetAzimuth" min="0" max="359" step="1"
                placeholder="0" style="width:6em;"> &deg;
     </div>
-    <div class="form-row">
+    <div style="margin-left:110px;margin-bottom:8px;font-size:11px;color:#999;">
+        Default value. Set at runtime via <code>msg.targetAzimuth</code> or topic
+        <code>targetAzimuth</code>; also by clicking the map.
+    </div>
+    <div class="form-row" style="margin-bottom:2px;">
         <label for="node-input-dxGrid"><i class="fa fa-map-pin"></i> DX Grid</label>
         <input type="text" id="node-input-dxGrid" placeholder="e.g. IO91 or IO91wm" maxlength="6"
                style="width:8em; text-transform:uppercase;">
+    </div>
+    <div style="margin-left:110px;margin-bottom:8px;font-size:11px;color:#999;">
+        Maidenhead grid of a DX station to mark. Set at runtime via
+        <code>msg.dxGrid</code> or topic <code>dxGrid</code> (empty clears it).
     </div>
     <div class="form-row">
         <label for="node-input-beamWidth"><i class="fa fa-arrows-h"></i> Beam width</label>
