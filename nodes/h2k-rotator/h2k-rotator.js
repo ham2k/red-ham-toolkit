@@ -852,16 +852,25 @@ module.exports = function (RED) {
                 $scope.$watch('msg', function (msg) {
                     if (!msg) return;
                     var changed = false;
+                    var targetChanged = false;
                     if (msg.currentAzimuth !== undefined) {
                         $scope.currentAzimuth = parseFloat(msg.currentAzimuth);
                         changed = true;
                     }
                     if (msg.targetAzimuth !== undefined) {
-                        $scope.targetAzimuth = parseFloat(msg.targetAzimuth);
+                        var newTarget = parseFloat(msg.targetAzimuth);
+                        if (newTarget !== $scope.targetAzimuth) { targetChanged = true; }
+                        $scope.targetAzimuth = newTarget;
                         $scope.alignedSince = null;
                         changed = true;
                     }
                     if (changed) $scope.drawMap();
+                    // Echo a target update on the output so downstream stays in sync.
+                    // Only when the value actually changed — this also prevents loops
+                    // if the output is wired back to the input.
+                    if (targetChanged) {
+                        $scope.send({ payload: $scope.targetAzimuth, topic: 'targetAzimuth' });
+                    }
                 });
             }
         });

@@ -27,8 +27,9 @@ indicators for the current and target azimuths of the antenna rotator.
 - `msg.currentAzimuth` *(number)* — current azimuth in degrees
 - `msg.targetAzimuth` *(number)* — target azimuth in degrees
 
-**Outputs** (emitted when user clicks the map):
-- `msg.payload` *(number)* — selected target azimuth in degrees
+**Outputs** (emitted whenever the target azimuth changes — by map click or by an incoming
+message that changes it; value-change only, so wiring the output back to the input won't loop):
+- `msg.payload` *(number)* — the new target azimuth in degrees
 - `msg.topic` — `"targetAzimuth"`
 
 ## Display logic

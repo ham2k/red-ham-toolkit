@@ -155,9 +155,12 @@
     <p>Named properties take precedence over the topic/payload forms when both are present.</p>
 
     <h3>Outputs</h3>
+    <p>Emitted whenever the target azimuth changes — either by clicking the map or by an
+       incoming message that changes it (value-change only, so feeding the output back into
+       the input will not loop).</p>
     <dl class="message-properties">
         <dt>payload <span class="property-type">number</span></dt>
-        <dd>Target azimuth (degrees) selected by clicking on the map.</dd>
+        <dd>The new target azimuth in degrees.</dd>
         <dt>topic <span class="property-type">string</span></dt>
         <dd><code>"targetAzimuth"</code></dd>
     </dl>
