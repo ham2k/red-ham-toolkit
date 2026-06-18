@@ -101,6 +101,7 @@ module.exports = function (RED) {
         var defaultZoom  = Math.max(1.0, Math.min(20, parseFloat(config.defaultZoom)  || 1.0));
         var beamWidth    = Math.max(0,   Math.min(180, parseFloat(config.beamWidth)   || 30));
         var showLogo     = (config.showLogo === undefined) ? true : !!config.showLogo;
+        var showGrayline = !!config.showGrayline;
         var gridMin      = Math.min(parseInt(config.width, 10)  || 6,
                                     parseInt(config.height, 10) || 6);
 
@@ -138,7 +139,7 @@ module.exports = function (RED) {
             label:  config.label,
 
             format: '<div style="width:100%;height:100%;padding:0;margin:0;box-sizing:border-box;"' +
-                    ' ng-init="init(\'' + safeQth + '\',' + safeCurrent + ',' + safeTarget + ',' + colorsLiteral + ',' + latLineWidth + ',' + defaultZoom + ',' + beamWidth + ',' + showLogo + ',' + gridMin + ')">' +
+                    ' ng-init="init(\'' + safeQth + '\',' + safeCurrent + ',' + safeTarget + ',' + colorsLiteral + ',' + latLineWidth + ',' + defaultZoom + ',' + beamWidth + ',' + showLogo + ',' + gridMin + ',' + showGrayline + ')">' +
                     '<svg id="rotator-{{$id}}" style="display:block;width:100%;height:100%;overflow:visible;"></svg>' +
                     '</div>',
 
@@ -300,6 +301,7 @@ module.exports = function (RED) {
                     document.removeEventListener('mousemove', onMouseMove);
                     document.removeEventListener('mouseup',   onMouseUp);
                     if (zoomAnimFrame) { cancelAnimationFrame(zoomAnimFrame); }
+                    if ($scope._graylineTimer) { clearInterval($scope._graylineTimer); }
                     var el = document.getElementById('rotator-' + $scope.$id);
                     if (el) {
                         el.removeEventListener('mousedown', onSvgMouseDown);
@@ -390,11 +392,12 @@ module.exports = function (RED) {
                 $scope.beamWidth    = 30;
                 $scope.showLogo     = true;
                 $scope.gridMin      = 6;
+                $scope.showGrayline = false;
 
                 // ----------------------------------------------------------
                 // Called by ng-init with values from node config
                 // ----------------------------------------------------------
-                $scope.init = function (qth, currentAz, targetAz, colors, latLineWidth, defaultZoom, beamWidth, showLogo, gridMin) {
+                $scope.init = function (qth, currentAz, targetAz, colors, latLineWidth, defaultZoom, beamWidth, showLogo, gridMin, showGrayline) {
                     $scope.qth            = qth || 'JJ00';
                     $scope.currentAzimuth = parseFloat(currentAz) || 0;
                     $scope.targetAzimuth  = parseFloat(targetAz)  || 0;
@@ -407,6 +410,14 @@ module.exports = function (RED) {
                     if (beamWidth != null) { $scope.beamWidth = parseFloat(beamWidth); }
                     if (showLogo != null) { $scope.showLogo = !!showLogo; }
                     if (gridMin != null)  { $scope.gridMin  = parseInt(gridMin, 10) || 6; }
+                    if (showGrayline != null) { $scope.showGrayline = !!showGrayline; }
+
+                    // Grayline terminator moves with time — redraw every minute while shown
+                    if ($scope.showGrayline && !$scope._graylineTimer) {
+                        $scope._graylineTimer = setInterval(function () {
+                            if ($scope.showGrayline) { $scope.drawMap(); }
+                        }, 60000);
+                    }
 
                     Promise.all([
                         loadScript('https://cdn.jsdelivr.net/npm/d3@7/dist/d3.min.js',
@@ -548,6 +559,30 @@ module.exports = function (RED) {
                             .style('fill', 'none')
                             .style('stroke', C.landOutline)
                             .style('stroke-width', '0.2px');
+                    }
+
+                    // ------ Grayline (night hemisphere) ------
+                    // Shade the night side: a 90°-radius circle centred on the
+                    // antipode of the sub-solar point, recomputed from UTC.
+                    if ($scope.showGrayline) {
+                        var now = new Date();
+                        // Solar declination (deg) from day-of-year approximation
+                        var yStart = Date.UTC(now.getUTCFullYear(), 0, 0);
+                        var dayN   = Math.floor((now - yStart) / 86400000);
+                        var decl   = -23.44 * Math.cos((2 * Math.PI / 365) * (dayN + 10));
+                        // Sub-solar longitude (deg): solar noon ≈ 0° at 12:00 UTC
+                        var utcH   = now.getUTCHours() + now.getUTCMinutes() / 60 + now.getUTCSeconds() / 3600;
+                        var lonSun = -15 * (utcH - 12);
+                        // Night hemisphere = antipode of the sub-solar point
+                        var nightCenter = [lonSun + 180, -decl];
+                        var nightCircle = d3.geoCircle().center(nightCenter).radius(90)();
+                        mapG.append('path')
+                            .datum(nightCircle)
+                            .attr('d', pathGen)
+                            .style('fill', '#000000')
+                            .style('fill-opacity', 0.2)
+                            .style('stroke', 'none')
+                            .style('pointer-events', 'none');
                     }
 
                     // Graticule (20° lat/lon grid) – drawn after land, configurable opacity
