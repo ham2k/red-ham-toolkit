@@ -266,6 +266,8 @@ module.exports = function (RED) {
                 $scope.zoom        = 1.0;
                 $scope.targetZoom  = 1.0;
                 $scope.defaultZoom = 1.0;
+                $scope.panX        = 0.5;  // view pan, fraction of width  (clamped 0.25–0.75)
+                $scope.panY        = 0.5;  // view pan, fraction of height (clamped 0.25–0.75)
                 $scope.alignedSince = Date.now() - 5001;  // treat initial state as already aligned if within 3°
 
                 // ----------------------------------------------------------
@@ -294,10 +296,15 @@ module.exports = function (RED) {
                 }
 
                 // ----------------------------------------------------------
-                // Drag-to-zoom state (lives here so window handlers are added once)
+                // Pan limits: the QTH may move up to 25% in from each edge.
+                // ----------------------------------------------------------
+                var PAN_MIN = 0.25, PAN_MAX = 0.75;
+                function clampPan(v) { return Math.max(PAN_MIN, Math.min(PAN_MAX, v)); }
+
+                // ----------------------------------------------------------
+                // Drag-to-pan state (lives here so window handlers are added once)
                 // ----------------------------------------------------------
                 var dragStart    = null;  // { x, y } in client coords
-                var dragZoomBase = 1.0;
                 var didDrag      = false;
 
                 function onMouseMove(e) {
@@ -306,13 +313,17 @@ module.exports = function (RED) {
                     var dy = e.clientY - dragStart.y;
                     if (!didDrag && (Math.abs(dx) > 4 || Math.abs(dy) > 4)) { didDrag = true; }
                     if (!didDrag) return;
-                    // right (+dx) or up (-dy) → zoom in; left or down → zoom out
-                    var delta = (dx - dy) / 120;
-                    var newZoom = Math.max(1.0, Math.min(20, dragZoomBase * Math.pow(2, delta)));
-                    $scope.zoom       = newZoom;
-                    $scope.targetZoom = newZoom;
-                    if (zoomAnimFrame) { cancelAnimationFrame(zoomAnimFrame); zoomAnimFrame = null; }
-                    $scope.drawMap();
+                    // Drag moves the QTH gradually; only when zoomed in ≥ 1.8×.
+                    if ($scope.zoom < 1.8) return;
+                    var g = getSvgGeometry();
+                    if (!g) return;
+                    var fx = clampPan((e.clientX - g.rect.left) / g.rect.width);
+                    var fy = clampPan((e.clientY - g.rect.top)  / g.rect.height);
+                    if (fx !== $scope.panX || fy !== $scope.panY) {
+                        $scope.panX = fx;
+                        $scope.panY = fy;
+                        $scope.drawMap();
+                    }
                 }
 
                 // Mouse-up ends a drag, or — if no drag occurred and the press
@@ -372,13 +383,30 @@ module.exports = function (RED) {
                     var b = $scope._zoomBtnRect;
                     if (b && localX >= b.x && localX <= b.x + b.w &&
                             localY >= b.y && localY <= b.y + b.h) {
+                        $scope.panX = 0.5; $scope.panY = 0.5;
                         requestZoomTo($scope.defaultZoom);
                         return;
                     }
 
-                    var dx = localX - g.cx;
-                    var dy = localY - g.cy;
-                    if (Math.sqrt(dx * dx + dy * dy) > g.radius) return;
+                    // Reject clicks outside the (possibly stretched) view polygon
+                    var poly = $scope._clipPts;
+                    if (poly && poly.length > 2) {
+                        var inside = false;
+                        for (var i = 0, j = poly.length - 1; i < poly.length; j = i++) {
+                            var xi = poly[i][0], yi = poly[i][1], xj = poly[j][0], yj = poly[j][1];
+                            if (((yi > localY) !== (yj > localY)) &&
+                                (localX < (xj - xi) * (localY - yi) / (yj - yi) + xi)) {
+                                inside = !inside;
+                            }
+                        }
+                        if (!inside) return;
+                    }
+
+                    // Azimuth is measured from the QTH screen position (the anchor)
+                    var ox = ($scope._qx != null) ? $scope._qx : g.cx;
+                    var oy = ($scope._qy != null) ? $scope._qy : g.cy;
+                    var dx = localX - ox;
+                    var dy = localY - oy;
                     var az = (Math.atan2(dx, -dy) * 180 / Math.PI + 360) % 360;
                     $scope.targetAzimuth = Math.round(az);
                     $scope.alignedSince  = null;
@@ -387,9 +415,8 @@ module.exports = function (RED) {
                 }
 
                 function onSvgMouseDown(event) {
-                    dragStart    = { x: event.clientX, y: event.clientY, onSvg: true };
-                    dragZoomBase = $scope.zoom;
-                    didDrag      = false;
+                    dragStart = { x: event.clientX, y: event.clientY, onSvg: true };
+                    didDrag   = false;
                 }
 
                 function onSvgWheel(event) {
@@ -501,18 +528,106 @@ module.exports = function (RED) {
                     // Leave room around the circle for the compass labels
                     var LABEL_PAD = 26;
                     var radius = Math.min(W, H) / 2 - LABEL_PAD;
-                    var cx = W / 2;
+                    var cx = W / 2;   // widget centre (clip / ocean ellipse centre)
                     var cy = H / 2;
+
+                    // ----- View pan: QTH (qx,qy) moves gradually toward an edge -----
+                    // Panning only applies once zoomed in to at least 1.8×.
+                    var panX = ($scope.zoom >= 1.8) ? $scope.panX : 0.5;
+                    var panY = ($scope.zoom >= 1.8) ? $scope.panY : 0.5;
+                    var qx = panX * W;   // QTH screen position = projection translate = rose centre
+                    var qy = panY * H;
+
+                    // ----- Outer border shape: rounded box -----
+                    // The far side(s) keep the original circle radius R; the box
+                    // stretches toward the QTH side(s) in proportion to the pan offset
+                    // (0 at centre → 25% at the limit). Near corners shrink from R
+                    // toward R/2 as the QTH moves away from the centre. Centred → a 2R
+                    // square with radius R, i.e. the original circle.
+                    var R = radius;
+                    var offX = panX - 0.5, offY = panY - 0.5;   // each in [-0.25, 0.25]
+                    var MARGIN = LABEL_PAD;
+                    // Per-axis bounds: far edge fixed at centre±R, near edge interpolates
+                    // toward the border as |off| grows to 0.25.
+                    function axisBounds(off, c, dim) {
+                        var t = Math.abs(off) / 0.25;
+                        if (off > 0) return [c - R, (c + R) + t * ((dim - MARGIN) - (c + R))];
+                        if (off < 0) return [(c - R) - t * ((c - R) - MARGIN), c + R];
+                        return [c - R, c + R];
+                    }
+                    var xb = axisBounds(offX, cx, W), left = xb[0], right = xb[1];
+                    var yb = axisBounds(offY, cy, H), top = yb[0], bottom = yb[1];
+                    var halfW = (right - left) / 2, halfH = (bottom - top) / 2;
+                    // Each corner's radius scales continuously with how aligned it is
+                    // with the pan direction (dot product), from R (opposite/centre)
+                    // down to R/2 (fully toward the QTH). Using the alignment rather
+                    // than a per-axis boolean avoids a jump when one axis crosses centre.
+                    function cornerR(sx, sy) {
+                        var n = Math.max(0, Math.min(1, (sx * offX + sy * offY) / 0.25));
+                        return Math.min(R * (1 - 0.5 * n), halfW, halfH);
+                    }
+                    var rTL = cornerR(-1, -1);
+                    var rTR = cornerR( 1, -1);
+                    var rBR = cornerR( 1,  1);
+                    var rBL = cornerR(-1,  1);
+
+                    // Build the border polygon (clip + ocean outline + rose reference)
+                    var clipPts = [];
+                    function arcPush(ox, oy, rr, a0, a1) {
+                        var steps = Math.max(2, Math.ceil(Math.abs(a1 - a0) / 0.05));
+                        for (var i = 0; i <= steps; i++) {
+                            var a = a0 + (a1 - a0) * i / steps;
+                            clipPts.push([ox + rr * Math.cos(a), oy + rr * Math.sin(a)]);
+                        }
+                    }
+                    arcPush(left + rTL,  top + rTL,    rTL, Math.PI,       Math.PI * 1.5);
+                    arcPush(right - rTR, top + rTR,    rTR, Math.PI * 1.5, Math.PI * 2);
+                    arcPush(right - rBR, bottom - rBR, rBR, 0,             Math.PI * 0.5);
+                    arcPush(left + rBL,  bottom - rBL, rBL, Math.PI * 0.5, Math.PI);
+
+                    function ptsToPath(pts) {
+                        return 'M' + pts.map(function (p) { return p[0].toFixed(1) + ',' + p[1].toFixed(1); }).join('L') + 'Z';
+                    }
+                    var clipPath = ptsToPath(clipPts);
+
+                    // Distance from the QTH (qx,qy) to the border polygon along a bearing
+                    // (radians, 0 = up/north). Lays the compass rose + azimuth lines on
+                    // the border, and sizes the projection clip so the map fills it.
+                    function borderDist(ang) {
+                        var dx = Math.sin(ang), dy = -Math.cos(ang), best = null;
+                        for (var i = 0; i < clipPts.length; i++) {
+                            var pA = clipPts[i], pB = clipPts[(i + 1) % clipPts.length];
+                            var ex = pB[0] - pA[0], ey = pB[1] - pA[1];
+                            var den = dx * ey - dy * ex;
+                            if (Math.abs(den) < 1e-9) continue;
+                            var t = ((pA[0] - qx) * ey - (pA[1] - qy) * ex) / den;
+                            var s = ((pA[0] - qx) * dy - (pA[1] - qy) * dx) / den;
+                            if (t >= 0 && s >= -1e-6 && s <= 1 + 1e-6 && (best === null || t < best)) best = t;
+                        }
+                        return best === null ? radius : best;
+                    }
+                    // Farthest border point from the QTH → sizes the projection clip angle
+                    var maxBorderDist = radius;
+                    for (var ci = 0; ci < clipPts.length; ci++) {
+                        var dd = Math.hypot(clipPts[ci][0] - qx, clipPts[ci][1] - qy);
+                        if (dd > maxBorderDist) maxBorderDist = dd;
+                    }
+
+                    // Expose geometry for click / hit-testing
+                    $scope._qx = qx; $scope._qy = qy; $scope._radius = radius;
+                    $scope._clipPts = clipPts;
 
                     // ------ Projection (azimuthal equidistant, centred on QTH) ------
                     var latlon = maidenheadToLatLon($scope.qth);
                     var lat = latlon[0], lon = latlon[1];
 
+                    var scalePxPerDeg = (radius / Math.PI * $scope.zoom) * (Math.PI / 180);
+                    var clipAngleDeg  = Math.min(179.9, maxBorderDist / scalePxPerDeg);
                     var projection = d3.geoAzimuthalEquidistant()
                         .rotate([-lon, -lat])
                         .scale(radius / Math.PI * $scope.zoom)
-                        .translate([cx, cy])
-                        .clipAngle(Math.min(179.9, 180 / $scope.zoom));
+                        .translate([qx, qy])
+                        .clipAngle(clipAngleDeg);
 
                     var pathGen = d3.geoPath().projection(projection);
 
@@ -524,8 +639,8 @@ module.exports = function (RED) {
                     var defs   = svg.append('defs');
                     var clipId = 'globe-clip-' + $scope.$id;
                     defs.append('clipPath').attr('id', clipId)
-                        .append('circle')
-                        .attr('cx', cx).attr('cy', cy).attr('r', radius);
+                        .append('path')
+                        .attr('d', clipPath);
 
                     function arrowMarker(id, color) {
                         defs.append('marker')
@@ -548,8 +663,8 @@ module.exports = function (RED) {
                     // (.attr) do not.
 
                     // ------ Ocean background ------
-                    svg.append('circle')
-                        .attr('cx', cx).attr('cy', cy).attr('r', radius)
+                    svg.append('path')
+                        .attr('d', clipPath)
                         .style('fill', C.ocean)
                         .style('stroke', '#333')
                         .style('stroke-width', '1.5px');
@@ -652,29 +767,30 @@ module.exports = function (RED) {
                             .style('opacity', l.opacity);
                     });
 
-                    // ------ Degree tick marks ------
+                    // ------ Degree tick marks (laid on the outer border) ------
                     for (var deg = 0; deg < 360; deg += 10) {
                         var isMajor   = (deg % 30 === 0);
                         var tickLen   = isMajor ? 9 : 5;
                         var rad       = deg * Math.PI / 180;
-                        var innerR    = radius - tickLen;
+                        var bd        = borderDist(rad);
+                        var innerR    = bd - tickLen;
                         svg.append('line')
-                            .attr('x1', cx + innerR  * Math.sin(rad))
-                            .attr('y1', cy - innerR  * Math.cos(rad))
-                            .attr('x2', cx + radius  * Math.sin(rad))
-                            .attr('y2', cy - radius  * Math.cos(rad))
+                            .attr('x1', qx + innerR  * Math.sin(rad))
+                            .attr('y1', qy - innerR  * Math.cos(rad))
+                            .attr('x2', qx + bd  * Math.sin(rad))
+                            .attr('y2', qy - bd  * Math.cos(rad))
                             .attr('stroke', '#333')
                             .attr('stroke-width', isMajor ? 1.5 : 0.8);
                     }
 
-                    // ------ Cardinal compass labels ------
+                    // ------ Cardinal compass labels (just outside the border) ------
                     var cardinals = [['N', 0], ['E', 90], ['S', 180], ['W', 270]];
-                    var labelR = radius + 16;
                     cardinals.forEach(function (c) {
                         var a = c[1] * Math.PI / 180;
+                        var labelR = borderDist(a) + 16;
                         svg.append('text')
-                            .attr('x', cx + labelR * Math.sin(a))
-                            .attr('y', cy - labelR * Math.cos(a))
+                            .attr('x', qx + labelR * Math.sin(a))
+                            .attr('y', qy - labelR * Math.cos(a))
                             .attr('text-anchor', 'middle')
                             .attr('dominant-baseline', 'middle')
                             .attr('font-size', '13px')
@@ -725,7 +841,7 @@ module.exports = function (RED) {
                         setTimeout(function () { $scope.drawMap(); }, msLeft + 50);
                     }
 
-                    var lineR = radius - 6; // slightly short so arrow head is inside circle
+                    // Azimuth-line length reaches the border (minus a little for the arrow head)
 
                     // ------ Beam width wedge ------
                     if ($scope.beamWidth > 0) {
@@ -736,16 +852,16 @@ module.exports = function (RED) {
                         var cRadBeam = $scope.currentAzimuth * Math.PI / 180;
                         var leftRad  = cRadBeam - halfRad;
                         var rightRad = cRadBeam + halfRad;
-                        var beamR = radius * 2;  // extends well past the circle; clip path trims it
-                        var x1 = cx + beamR * Math.sin(leftRad),  y1 = cy - beamR * Math.cos(leftRad);
-                        var x2 = cx + beamR * Math.sin(rightRad), y2 = cy - beamR * Math.cos(rightRad);
+                        var beamR = Math.max(W, H) * 2;  // extends well past the view; clip path trims it
+                        var x1 = qx + beamR * Math.sin(leftRad),  y1 = qy - beamR * Math.cos(leftRad);
+                        var x2 = qx + beamR * Math.sin(rightRad), y2 = qy - beamR * Math.cos(rightRad);
                         var largeArc = bw >= 180 ? 1 : 0;
 
                         var beamG = svg.append('g').attr('clip-path', 'url(#' + clipId + ')');
 
                         // filled wedge
                         beamG.append('path')
-                            .attr('d', 'M' + cx + ',' + cy +
+                            .attr('d', 'M' + qx + ',' + qy +
                                        ' L' + x1 + ',' + y1 +
                                        ' A' + beamR + ',' + beamR + ' 0 ' + largeArc + ' 1 ' + x2 + ',' + y2 +
                                        ' Z')
@@ -755,7 +871,7 @@ module.exports = function (RED) {
 
                         // left edge line
                         beamG.append('line')
-                            .attr('x1', cx).attr('y1', cy)
+                            .attr('x1', qx).attr('y1', qy)
                             .attr('x2', x1).attr('y2', y1)
                             .style('stroke', beamColor)
                             .style('stroke-opacity', beamBaseOpacity * 0.25)
@@ -763,7 +879,7 @@ module.exports = function (RED) {
 
                         // right edge line
                         beamG.append('line')
-                            .attr('x1', cx).attr('y1', cy)
+                            .attr('x1', qx).attr('y1', qy)
                             .attr('x2', x2).attr('y2', y2)
                             .style('stroke', beamColor)
                             .style('stroke-opacity', beamBaseOpacity * 0.25)
@@ -775,10 +891,11 @@ module.exports = function (RED) {
                         var tId  = 'arrow-tgt-' + $scope.$id;
                         arrowMarker(tId, C.target);
                         var trad = $scope.targetAzimuth * Math.PI / 180;
+                        var tLineR = borderDist(trad) - 6;
                         svg.append('line')
-                            .attr('x1', cx).attr('y1', cy)
-                            .attr('x2', cx + lineR * Math.sin(trad))
-                            .attr('y2', cy - lineR * Math.cos(trad))
+                            .attr('x1', qx).attr('y1', qy)
+                            .attr('x2', qx + tLineR * Math.sin(trad))
+                            .attr('y2', qy - tLineR * Math.cos(trad))
                             .attr('stroke', C.target)
                             .attr('stroke-opacity', C.targetOpacity / 100)
                             .attr('stroke-width', 2)
@@ -791,17 +908,18 @@ module.exports = function (RED) {
                     var cId  = 'arrow-cur-' + $scope.$id;
                     arrowMarker(cId, curColor);
                     var crad = $scope.currentAzimuth * Math.PI / 180;
+                    var cLineR = borderDist(crad) - 6;
                     svg.append('line')
-                        .attr('x1', cx).attr('y1', cy)
-                        .attr('x2', cx + lineR * Math.sin(crad))
-                        .attr('y2', cy - lineR * Math.cos(crad))
+                        .attr('x1', qx).attr('y1', qy)
+                        .attr('x2', qx + cLineR * Math.sin(crad))
+                        .attr('y2', qy - cLineR * Math.cos(crad))
                         .attr('stroke', curColor)
                         .attr('stroke-opacity', curOpacity)
                         .attr('stroke-width', 2.5)
                         .attr('marker-end', 'url(#' + cId + ')');
 
-                    // Centre dot
-                    svg.append('circle').attr('cx', cx).attr('cy', cy).attr('r', 5)
+                    // QTH dot (at the anchor)
+                    svg.append('circle').attr('cx', qx).attr('cy', qy).attr('r', 5)
                         .attr('fill', '#222').attr('stroke', 'white').attr('stroke-width', 1.5);
 
                     // ------ Ham2K logo (bottom-right) ------
