@@ -98,18 +98,13 @@ module.exports = function (RED) {
             polarCirclesOpacity: safeOpacity(config.opacityPolarCircles, 55),
             graticule: safeColor(config.colorGraticule, '#444444'),
             graticuleOpacity: safeOpacity(config.opacityGraticule, 40),
-            hudBg: safeColor(config.colorHudBg, '#888888'),
-            hudBgOpacity: safeOpacity(config.opacityHudBg, 55),
             dxDot: safeColor(config.colorDxDot, '#ff0000'),
             dxDotOpacity: safeOpacity(config.opacityDxDot, 100)
         };
         var latLineWidth = Math.max(0.2, Math.min(5, parseFloat(config.latLineWidth) || 0.4));
         var defaultZoom = Math.max(1.0, Math.min(20, parseFloat(config.defaultZoom) || 1.0));
         var beamWidth = Math.max(0, Math.min(180, parseFloat(config.beamWidth) || 30));
-        var showLogo = (config.showLogo === undefined) ? true : !!config.showLogo;
         var showGrayline = (config.showGrayline === undefined) ? true : !!config.showGrayline;
-        var gridMin = Math.min(parseInt(config.width, 10) || 6,
-            parseInt(config.height, 10) || 6);
         // Comma-separated allowed azimuths; keep only safe chars for the ng-init string
         var safeAllowed = (config.allowedAzimuths || '').replace(/[^0-9.,\s-]/g, '').substring(0, 300);
 
@@ -133,8 +128,6 @@ module.exports = function (RED) {
             "polarCirclesOpacity:" + colors.polarCirclesOpacity + "," +
             "graticule:'" + colors.graticule + "'," +
             "graticuleOpacity:" + colors.graticuleOpacity + "," +
-            "hudBg:'" + colors.hudBg + "'," +
-            "hudBgOpacity:" + colors.hudBgOpacity + "," +
             "dxDot:'" + colors.dxDot + "'," +
             "dxDotOpacity:" + colors.dxDotOpacity + "" +
             '}';
@@ -149,7 +142,7 @@ module.exports = function (RED) {
             label: config.label,
 
             format: '<div style="width:100%;height:100%;padding:0;margin:0;box-sizing:border-box;"' +
-                ' ng-init="init(\'' + safeQth + '\',' + safeCurrent + ',' + safeTarget + ',' + colorsLiteral + ',' + latLineWidth + ',' + defaultZoom + ',' + beamWidth + ',' + showLogo + ',' + gridMin + ',' + showGrayline + ',\'' + safeDxGrid + '\',\'' + safeAllowed + '\')">' +
+                ' ng-init="init(\'' + safeQth + '\',' + safeCurrent + ',' + safeTarget + ',' + colorsLiteral + ',' + latLineWidth + ',' + defaultZoom + ',' + beamWidth + ',' + showGrayline + ',\'' + safeDxGrid + '\',\'' + safeAllowed + '\')">' +
                 '<svg id="rotator-{{$id}}" style="display:block;width:100%;height:100%;overflow:visible;"></svg>' +
                 '</div>',
 
@@ -397,7 +390,7 @@ module.exports = function (RED) {
                     if (!el) return null;
                     var rect = el.getBoundingClientRect();
                     var W = rect.width, H = rect.height;
-                    var LABEL_PAD = 26;
+                    var LABEL_PAD = 0;
                     var radius = Math.min(W, H) / 2 - LABEL_PAD;
                     return { rect: rect, cx: W / 2, cy: H / 2, radius: radius };
                 }
@@ -494,14 +487,12 @@ module.exports = function (RED) {
                 };
                 $scope.latLineWidth = 0.4;
                 $scope.beamWidth = 30;
-                $scope.showLogo = true;
-                $scope.gridMin = 6;
                 $scope.showGrayline = false;
 
                 // ----------------------------------------------------------
                 // Called by ng-init with values from node config
                 // ----------------------------------------------------------
-                $scope.init = function (qth, currentAz, targetAz, colors, latLineWidth, defaultZoom, beamWidth, showLogo, gridMin, showGrayline, dxGrid, allowedAzimuths) {
+                $scope.init = function (qth, currentAz, targetAz, colors, latLineWidth, defaultZoom, beamWidth, showGrayline, dxGrid, allowedAzimuths) {
                     $scope.qth = qth || 'JJ00';
                     $scope.currentAzimuth = parseFloat(currentAz) || 0;
                     $scope.targetAzimuth = parseFloat(targetAz) || 0;
@@ -522,8 +513,6 @@ module.exports = function (RED) {
                         $scope.zoom = $scope.defaultZoom;
                     }
                     if (beamWidth != null) { $scope.beamWidth = parseFloat(beamWidth); }
-                    if (showLogo != null) { $scope.showLogo = !!showLogo; }
-                    if (gridMin != null) { $scope.gridMin = parseInt(gridMin, 10) || 6; }
                     if (showGrayline != null) { $scope.showGrayline = !!showGrayline; }
 
                     // Grayline terminator moves with time — redraw every minute while shown
@@ -574,7 +563,7 @@ module.exports = function (RED) {
                     if (W < 10 || H < 10) { setTimeout(function () { $scope.drawMap(); }, 200); return; }
 
                     // Leave room around the circle for the compass labels
-                    var LABEL_PAD = 26;
+                    var LABEL_PAD = 0;
                     var radius = Math.min(W, H) / 2 - LABEL_PAD;
                     var cx = W / 2;   // widget centre (clip / ocean ellipse centre)
                     var cy = H / 2;
@@ -816,7 +805,9 @@ module.exports = function (RED) {
                     });
 
                     // ------ Degree tick marks (laid on the outer border) ------
+                    // Cardinals (0/90/180/270) are replaced by labelled badges below.
                     for (var deg = 0; deg < 360; deg += 10) {
+                        if (deg % 90 === 0) continue;
                         var isMajor = (deg % 30 === 0);
                         var tickLen = isMajor ? 9 : 5;
                         var rad = deg * Math.PI / 180;
@@ -844,23 +835,6 @@ module.exports = function (RED) {
                             .attr('stroke', '#333')
                             .attr('stroke-width', 9)
                             .attr('stroke-linecap', 'round');
-                    });
-
-                    // ------ Cardinal compass labels (just outside the border) ------
-                    var cardinals = [['N', 0], ['E', 90], ['S', 180], ['W', 270]];
-                    cardinals.forEach(function (c) {
-                        var a = c[1] * Math.PI / 180;
-                        var labelR = borderDist(a) + 16;
-                        svg.append('text')
-                            .attr('x', qx + labelR * Math.sin(a))
-                            .attr('y', qy - labelR * Math.cos(a))
-                            .attr('text-anchor', 'middle')
-                            .attr('dominant-baseline', 'middle')
-                            .attr('font-size', '13px')
-                            .attr('font-weight', 'bold')
-                            .attr('font-family', 'sans-serif')
-                            .attr('fill', '#111')
-                            .text(c[0]);
                     });
 
                     // ------ DX grid marker ------
@@ -954,7 +928,7 @@ module.exports = function (RED) {
                         var tId = 'arrow-tgt-' + $scope.$id;
                         arrowMarker(tId, C.target);
                         var trad = $scope.targetAzimuth * Math.PI / 180;
-                        var tLineR = borderDist(trad) - 6;
+                        var tLineR = borderDist(trad) - 19;
                         svg.append('line')
                             .attr('x1', qx).attr('y1', qy)
                             .attr('x2', qx + tLineR * Math.sin(trad))
@@ -971,7 +945,7 @@ module.exports = function (RED) {
                     var cId = 'arrow-cur-' + $scope.$id;
                     arrowMarker(cId, curColor);
                     var crad = $scope.currentAzimuth * Math.PI / 180;
-                    var cLineR = borderDist(crad) - 6;
+                    var cLineR = borderDist(crad) - 19;
                     svg.append('line')
                         .attr('x1', qx).attr('y1', qy)
                         .attr('x2', qx + cLineR * Math.sin(crad))
@@ -985,84 +959,61 @@ module.exports = function (RED) {
                     svg.append('circle').attr('cx', qx).attr('cy', qy).attr('r', 5)
                         .attr('fill', '#222').attr('stroke', 'white').attr('stroke-width', 1.5);
 
-                    // ------ Ham2K logo (bottom-right) ------
-                    if ($scope.showLogo) {
-                        var logoSize = $scope.gridMin < 4 ? 24 : 36;
-                        svg.append('image')
-                            .attr('href', '/h2k-rotator-widget-1/ham2k-square.svg')
-                            .attr('x', W - logoSize - 8)
-                            .attr('y', H - logoSize - 8)
-                            .attr('width', logoSize)
-                            .attr('height', logoSize);
-                    }
+                    // ------ Cardinal labels (no background, black, above arrows) ------
+                    var cardinals = [['N', 0], ['E', 90], ['S', 180], ['W', 270]];
+                    cardinals.forEach(function (c) {
+                        var a = c[1] * Math.PI / 180;
+                        var bd = borderDist(a);
+                        var labelR = bd - 11;   // center 11px from border
+                        svg.append('text')
+                            .attr('x', qx + labelR * Math.sin(a))
+                            .attr('y', qy - labelR * Math.cos(a))
+                            .attr('text-anchor', 'middle')
+                            .attr('dominant-baseline', 'middle')
+                            .attr('font-size', '17px')
+                            .attr('font-weight', '900')
+                            .attr('font-family', 'sans-serif')
+                            .attr('fill', '#000')
+                            .text(c[0]);
+                    });
 
-                    // ------ HUD readout (top-left overlay) ------
-                    var hudPad = 6, hudH = 30;
-                    var hudBgColor = C.hudBg || '#000000';
-                    var hudBgAlpha = (C.hudBgOpacity != null ? C.hudBgOpacity : 55) / 100;
-                    // measure text width roughly: monospace ~9px per char at 15px
-                    var hudText, hudW;
-                    if (aligned) {
-                        hudText = Math.round($scope.currentAzimuth) + '°';
-                        hudW = hudText.length * 9 + hudPad * 2;
-                    } else {
-                        hudW = (String(Math.round($scope.currentAzimuth)).length + String(Math.round($scope.targetAzimuth)).length + 5) * 9 + hudPad * 2;
-                    }
-                    hudW = Math.max(hudW, 40);
-
-                    // background rect — convert hex to rgba for SVG fill
-                    var hr = parseInt(hudBgColor.slice(1, 3), 16);
-                    var hg = parseInt(hudBgColor.slice(3, 5), 16);
-                    var hb = parseInt(hudBgColor.slice(5, 7), 16);
-                    svg.append('rect')
-                        .attr('x', 8).attr('y', 8)
-                        .attr('width', hudW).attr('height', hudH)
-                        .style('fill', 'rgba(' + hr + ',' + hg + ',' + hb + ',' + hudBgAlpha + ')')
-                        .attr('rx', 4);
-
-                    var hudTextEl = svg.append('text')
-                        .attr('x', 8 + hudPad)
-                        .attr('y', 8 + hudPad + 13)
-                        .attr('font-size', '15px')
+                    // ------ HUD readout (no background) ------
+                    // Current azimuth top-left; target top-right (arrow-prefixed),
+                    // shown only while not matched.
+                    var hudY = 22;
+                    svg.append('text')
+                        .attr('x', 10).attr('y', hudY)
+                        .attr('text-anchor', 'start')
+                        .attr('font-size', '17px')
                         .attr('font-family', 'monospace')
-                        .attr('dominant-baseline', 'auto');
+                        .style('fill', aligned ? C.aligned : C.current)
+                        .text(Math.round($scope.currentAzimuth) + '°');
 
-                    if (aligned) {
-                        hudTextEl.append('tspan')
-                            .style('fill', C.aligned)
-                            .text(Math.round($scope.currentAzimuth) + '°');
-                    } else {
-                        hudTextEl.append('tspan')
-                            .style('fill', C.current)
-                            .text(Math.round($scope.currentAzimuth) + '°');
-                        hudTextEl.append('tspan')
-                            .style('fill', C.aligned)
-                            .text(' ➜ ');
-                        hudTextEl.append('tspan')
-                            .style('fill', C.target)
-                            .text(Math.round($scope.targetAzimuth) + '°');
+                    if (!aligned) {
+                        var tgtEl = svg.append('text')
+                            .attr('x', W - 10).attr('y', hudY)
+                            .attr('text-anchor', 'end')
+                            .attr('font-size', '17px')
+                            .attr('font-family', 'monospace');
+                        tgtEl.append('tspan').style('fill', C.aligned).text('➜ ');
+                        tgtEl.append('tspan').style('fill', C.target).text(Math.round($scope.targetAzimuth) + '°');
                     }
 
-                    // ------ Zoom reset button (shown only when zoom != default) ------
+                    // ------ View reset button (bottom-right; only when zoomed/panned off default) ------
                     // Hit-testing is done in the document-level mouseup handler
                     // (see onMouseUp/selectTargetAt) so it keeps working while
                     // frequent redraws replace the SVG element under the cursor.
                     if (Math.abs($scope.zoom - $scope.defaultZoom) > 0.01) {
-                        var btnSize = 26, btnX = W - btnSize - 6, btnY = 8;
+                        var btnSize = 40, btnX = W - btnSize - 8, btnY = H - btnSize - 8;
                         $scope._zoomBtnRect = { x: btnX, y: btnY, w: btnSize, h: btnSize };
                         var btnG = svg.append('g').style('cursor', 'pointer');
                         btnG.append('title')
                             .text('Zoom: ' + $scope.zoom.toFixed(2) + '× (click to reset to ' + $scope.defaultZoom.toFixed(2) + '×)');
-                        btnG.append('rect')
-                            .attr('x', btnX).attr('y', btnY)
-                            .attr('width', btnSize).attr('height', btnSize)
-                            .attr('rx', 4)
-                            .style('fill', 'rgba(' + hr + ',' + hg + ',' + hb + ',' + hudBgAlpha + ')');
                         btnG.append('text')
                             .attr('x', btnX + btnSize / 2).attr('y', btnY + btnSize / 2 + 1)
                             .attr('text-anchor', 'middle')
                             .attr('dominant-baseline', 'middle')
-                            .attr('font-size', '16px')
+                            .attr('font-size', '28px')
                             .style('fill', C.aligned)
                             .style('pointer-events', 'none')
                             .text('↺');

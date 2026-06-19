@@ -104,11 +104,6 @@
         <input type="number" id="node-input-opacityAligned" min="0" max="100" step="1" style="width:4em;margin-left:6px;"> %
     </div>
     <div class="form-row">
-        <label style="width:140px;" for="node-input-colorHudBg"><i class="fa fa-info-circle"></i> HUD background</label>
-        <input type="color" id="node-input-colorHudBg" style="width:4em;height:2em;padding:1px;cursor:pointer;">
-        <input type="number" id="node-input-opacityHudBg" min="0" max="100" step="1" style="width:4em;margin-left:6px;"> %
-    </div>
-    <div class="form-row">
         <label style="width:140px;" for="node-input-colorDxDot"><i class="fa fa-map-pin"></i> DX grid dot</label>
         <input type="color" id="node-input-colorDxDot" style="width:4em;height:2em;padding:1px;cursor:pointer;">
         <input type="number" id="node-input-opacityDxDot" min="0" max="100" step="1" style="width:4em;margin-left:6px;"> %
@@ -167,10 +162,6 @@
             <input type="number" id="node-input-defaultZoom" min="1" max="20" step="0.05"
                    placeholder="1" style="width:5em;">
             <span style="margin-left:6px;font-size:11px;color:#888;">1 = full globe</span>
-        </div>
-        <div class="form-row">
-            <label for="node-input-showLogo" style="width:auto;"><i class="fa fa-image"></i> Show Ham2K logo</label>
-            <input type="checkbox" id="node-input-showLogo" style="display:inline-block;width:auto;vertical-align:top;margin-left:6px;">
         </div>
         <div class="form-row">
             <label for="node-input-showGrayline" style="width:auto;"><i class="fa fa-moon-o"></i> Show grayline</label>
@@ -266,8 +257,6 @@
             opacityTarget: { value: 100 },
             colorAligned: { value: '#000000' },
             opacityAligned: { value: 100 },
-            colorHudBg: { value: '#888888' },
-            opacityHudBg: { value: 55 },
             colorDxDot: { value: '#ff0000' },
             opacityDxDot: { value: 100 },
             colorGraticule: { value: '#444444' },
@@ -279,7 +268,6 @@
             latLineWidth: { value: 0.4 },
             defaultZoom: { value: 1.0 },
             beamWidth: { value: 30 },
-            showLogo: { value: true },
             showGrayline: { value: true },
             allowedAzimuths: { value: '' }
         },
@@ -314,8 +302,6 @@
                 opacityTarget: 100,
                 colorAligned: '#000000',
                 opacityAligned: 100,
-                colorHudBg: '#888888',
-                opacityHudBg: 55,
                 colorDxDot: '#ff0000',
                 opacityDxDot: 100,
                 colorGraticule: '#444444',
