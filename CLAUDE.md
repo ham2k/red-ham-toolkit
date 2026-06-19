@@ -1,4 +1,4 @@
-# @ham2k/red-ham-tools
+# @ham2k/red-ham-toolkit
 
 A collection of ham-radio tools (nodes/widgets) for Node-RED Dashboard.
 

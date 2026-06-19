@@ -1,6 +1,6 @@
 # Contributing
 
-This is the `@ham2k/red-ham-tools` package, which hosts multiple Node-RED Dashboard nodes
+This is the `@ham2k/red-ham-toolkit` package, which hosts multiple Node-RED Dashboard nodes
 under `nodes/`. This document covers package-wide setup and the development workflow. For
 node-specific usage and testing, see each node's `README.md` (e.g.
 [`nodes/h2k-rotator/README.md`](nodes/h2k-rotator/README.md)).
@@ -33,14 +33,14 @@ changes without reinstalling:
 
 ```bash
 git clone <repo-url>
-cd red-ham-tools
+cd red-ham-toolkit
 
 # Register the package globally so npm link can find it
 npm link
 
 # Link it into Node-RED's node_modules
 cd ~/.node-red
-npm link @ham2k/red-ham-tools
+npm link @ham2k/red-ham-toolkit
 ```
 
 After linking, edits to the source files are picked up the next time Node-RED is

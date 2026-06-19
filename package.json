@@ -1,8 +1,15 @@
 {
-  "name": "@ham2k/red-ham-tools",
+  "name": "@ham2k/red-ham-toolkit",
   "version": "0.1.0",
-  "description": "Ham radio tools for Node-RED Dashboard",
-  "keywords": ["node-red", "ham-radio", "rotator", "antenna", "azimuth"],
+  "description": "Ham radio toolkit for Node-RED",
+  "homepage": "https://github.com/ham2k/red-ham-toolkit",
+  "keywords": [
+    "node-red",
+    "ham-radio",
+    "rotator",
+    "antenna",
+    "azimuth"
+  ],
   "author": "",
   "license": "MIT",
   "node-red": {

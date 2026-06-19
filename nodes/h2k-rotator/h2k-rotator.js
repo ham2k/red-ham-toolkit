@@ -1,20 +1,20 @@
 var path = require('path');
-var os   = require('os');
+var os = require('os');
 
 function loadDashboard(RED) {
     // Works when properly installed alongside node-red-dashboard
-    try { return require('node-red-dashboard'); } catch (e) {}
+    try { return require('node-red-dashboard'); } catch (e) { }
     // Works when npm-linked for development: resolve from the Node-RED user dir
     var userDir = (RED.settings && RED.settings.userDir) ||
-                  path.join(os.homedir(), '.node-red');
-    try { return require(path.join(userDir, 'node_modules', 'node-red-dashboard')); } catch (e) {}
+        path.join(os.homedir(), '.node-red');
+    try { return require(path.join(userDir, 'node_modules', 'node-red-dashboard')); } catch (e) { }
     return null;
 }
 
 module.exports = function (RED) {
     var dashboardModule = loadDashboard(RED);
     if (!dashboardModule) {
-        RED.log.warn('@ham2k/red-ham-tools: node-red-dashboard is required but could not be found');
+        RED.log.warn('@ham2k/red-ham-toolkit: node-red-dashboard is required but could not be found');
         return;
     }
     var ui = dashboardModule(RED);
@@ -66,8 +66,8 @@ module.exports = function (RED) {
             .substring(0, 6)
             .toUpperCase();
         var safeCurrent = isFinite(parseFloat(config.currentAzimuth)) ? parseFloat(config.currentAzimuth) : 0;
-        var safeTarget  = isFinite(parseFloat(config.targetAzimuth))  ? parseFloat(config.targetAzimuth)  : 0;
-        var safeDxGrid  = (config.dxGrid || '')
+        var safeTarget = isFinite(parseFloat(config.targetAzimuth)) ? parseFloat(config.targetAzimuth) : 0;
+        var safeDxGrid = (config.dxGrid || '')
             .replace(/[^A-Za-z0-9]/g, '')
             .substring(0, 6)
             .toUpperCase();
@@ -82,76 +82,76 @@ module.exports = function (RED) {
             return (isFinite(n) && n >= 0 && n <= 100) ? Math.round(n) : fallback;
         }
         var colors = {
-            ocean:               safeColor(config.colorOcean,        '#76acd6'),
-            land:                safeColor(config.colorLand,         '#9e7e3d'),
-            landOutline:         safeColor(config.colorLandOutline,  '#5c402e'),
-            landOutlineOpacity:  safeOpacity(config.opacityLandOutline, 100),
-            current:             safeColor(config.colorCurrent,      '#001ef9'),
-            currentOpacity:      safeOpacity(config.opacityCurrent,  100),
-            target:              safeColor(config.colorTarget,       '#ff4400'),
-            targetOpacity:       safeOpacity(config.opacityTarget,   100),
-            aligned:             safeColor(config.colorAligned,      '#000000'),
-            alignedOpacity:      safeOpacity(config.opacityAligned,  100),
-            equator:             safeColor(config.colorEquator,      '#555555'),
-            equatorOpacity:      safeOpacity(config.opacityEquator,  70),
-            polarCircles:        safeColor(config.colorPolarCircles, '#555555'),
+            ocean: safeColor(config.colorOcean, '#76acd6'),
+            land: safeColor(config.colorLand, '#9e7e3d'),
+            landOutline: safeColor(config.colorLandOutline, '#5c402e'),
+            landOutlineOpacity: safeOpacity(config.opacityLandOutline, 100),
+            current: safeColor(config.colorCurrent, '#001ef9'),
+            currentOpacity: safeOpacity(config.opacityCurrent, 100),
+            target: safeColor(config.colorTarget, '#ff4400'),
+            targetOpacity: safeOpacity(config.opacityTarget, 100),
+            aligned: safeColor(config.colorAligned, '#000000'),
+            alignedOpacity: safeOpacity(config.opacityAligned, 100),
+            equator: safeColor(config.colorEquator, '#555555'),
+            equatorOpacity: safeOpacity(config.opacityEquator, 70),
+            polarCircles: safeColor(config.colorPolarCircles, '#555555'),
             polarCirclesOpacity: safeOpacity(config.opacityPolarCircles, 55),
-            graticule:           safeColor(config.colorGraticule,    '#444444'),
-            graticuleOpacity:    safeOpacity(config.opacityGraticule, 40),
-            hudBg:               safeColor(config.colorHudBg,         '#888888'),
-            hudBgOpacity:        safeOpacity(config.opacityHudBg,      55),
-            dxDot:               safeColor(config.colorDxDot,         '#ff0000'),
-            dxDotOpacity:        safeOpacity(config.opacityDxDot,     100)
+            graticule: safeColor(config.colorGraticule, '#444444'),
+            graticuleOpacity: safeOpacity(config.opacityGraticule, 40),
+            hudBg: safeColor(config.colorHudBg, '#888888'),
+            hudBgOpacity: safeOpacity(config.opacityHudBg, 55),
+            dxDot: safeColor(config.colorDxDot, '#ff0000'),
+            dxDotOpacity: safeOpacity(config.opacityDxDot, 100)
         };
         var latLineWidth = Math.max(0.2, Math.min(5, parseFloat(config.latLineWidth) || 0.4));
-        var defaultZoom  = Math.max(1.0, Math.min(20, parseFloat(config.defaultZoom)  || 1.0));
-        var beamWidth    = Math.max(0,   Math.min(180, parseFloat(config.beamWidth)   || 30));
-        var showLogo     = (config.showLogo === undefined) ? true : !!config.showLogo;
+        var defaultZoom = Math.max(1.0, Math.min(20, parseFloat(config.defaultZoom) || 1.0));
+        var beamWidth = Math.max(0, Math.min(180, parseFloat(config.beamWidth) || 30));
+        var showLogo = (config.showLogo === undefined) ? true : !!config.showLogo;
         var showGrayline = (config.showGrayline === undefined) ? true : !!config.showGrayline;
-        var gridMin      = Math.min(parseInt(config.width, 10)  || 6,
-                                    parseInt(config.height, 10) || 6);
+        var gridMin = Math.min(parseInt(config.width, 10) || 6,
+            parseInt(config.height, 10) || 6);
         // Comma-separated allowed azimuths; keep only safe chars for the ng-init string
-        var safeAllowed  = (config.allowedAzimuths || '').replace(/[^0-9.,\s-]/g, '').substring(0, 300);
+        var safeAllowed = (config.allowedAzimuths || '').replace(/[^0-9.,\s-]/g, '').substring(0, 300);
 
         // Build a JS object literal using single quotes so it embeds safely inside
         // the double-quoted ng-init HTML attribute (JSON.stringify would break it).
         // Color strings are single-quoted; opacity values are plain numbers.
         var colorsLiteral = '{' +
-            "ocean:'"               + colors.ocean               + "'," +
-            "land:'"                + colors.land                + "'," +
-            "landOutline:'"         + colors.landOutline         + "'," +
-            "landOutlineOpacity:"   + colors.landOutlineOpacity  + "," +
-            "current:'"             + colors.current             + "'," +
-            "currentOpacity:"       + colors.currentOpacity      + "," +
-            "target:'"              + colors.target              + "'," +
-            "targetOpacity:"        + colors.targetOpacity       + "," +
-            "aligned:'"             + colors.aligned             + "'," +
-            "alignedOpacity:"       + colors.alignedOpacity      + "," +
-            "equator:'"             + colors.equator             + "'," +
-            "equatorOpacity:"       + colors.equatorOpacity      + "," +
-            "polarCircles:'"        + colors.polarCircles        + "'," +
-            "polarCirclesOpacity:"  + colors.polarCirclesOpacity + "," +
-            "graticule:'"           + colors.graticule           + "'," +
-            "graticuleOpacity:"     + colors.graticuleOpacity    + "," +
-            "hudBg:'"               + colors.hudBg               + "'," +
-            "hudBgOpacity:"         + colors.hudBgOpacity        + "," +
-            "dxDot:'"               + colors.dxDot               + "'," +
-            "dxDotOpacity:"         + colors.dxDotOpacity        + "" +
-        '}';
+            "ocean:'" + colors.ocean + "'," +
+            "land:'" + colors.land + "'," +
+            "landOutline:'" + colors.landOutline + "'," +
+            "landOutlineOpacity:" + colors.landOutlineOpacity + "," +
+            "current:'" + colors.current + "'," +
+            "currentOpacity:" + colors.currentOpacity + "," +
+            "target:'" + colors.target + "'," +
+            "targetOpacity:" + colors.targetOpacity + "," +
+            "aligned:'" + colors.aligned + "'," +
+            "alignedOpacity:" + colors.alignedOpacity + "," +
+            "equator:'" + colors.equator + "'," +
+            "equatorOpacity:" + colors.equatorOpacity + "," +
+            "polarCircles:'" + colors.polarCircles + "'," +
+            "polarCirclesOpacity:" + colors.polarCirclesOpacity + "," +
+            "graticule:'" + colors.graticule + "'," +
+            "graticuleOpacity:" + colors.graticuleOpacity + "," +
+            "hudBg:'" + colors.hudBg + "'," +
+            "hudBgOpacity:" + colors.hudBgOpacity + "," +
+            "dxDot:'" + colors.dxDot + "'," +
+            "dxDotOpacity:" + colors.dxDotOpacity + "" +
+            '}';
 
         var widgetCleanup = ui.addWidget({
             node: node,
-            group:  config.group,
-            width:  config.width,
+            group: config.group,
+            width: config.width,
             height: config.height,
-            order:  config.order,
-            disp:   config.disp,
-            label:  config.label,
+            order: config.order,
+            disp: config.disp,
+            label: config.label,
 
             format: '<div style="width:100%;height:100%;padding:0;margin:0;box-sizing:border-box;"' +
-                    ' ng-init="init(\'' + safeQth + '\',' + safeCurrent + ',' + safeTarget + ',' + colorsLiteral + ',' + latLineWidth + ',' + defaultZoom + ',' + beamWidth + ',' + showLogo + ',' + gridMin + ',' + showGrayline + ',\'' + safeDxGrid + '\',\'' + safeAllowed + '\')">' +
-                    '<svg id="rotator-{{$id}}" style="display:block;width:100%;height:100%;overflow:visible;"></svg>' +
-                    '</div>',
+                ' ng-init="init(\'' + safeQth + '\',' + safeCurrent + ',' + safeTarget + ',' + colorsLiteral + ',' + latLineWidth + ',' + defaultZoom + ',' + beamWidth + ',' + showLogo + ',' + gridMin + ',' + showGrayline + ',\'' + safeDxGrid + '\',\'' + safeAllowed + '\')">' +
+                '<svg id="rotator-{{$id}}" style="display:block;width:100%;height:100%;overflow:visible;"></svg>' +
+                '</div>',
 
             templateScope: 'local',
             emitOnlyNewValues: false,
@@ -250,7 +250,7 @@ module.exports = function (RED) {
                         }
                         var s = document.createElement('script');
                         s.src = url;
-                        s.onload  = resolve;
+                        s.onload = resolve;
                         s.onerror = function () { reject(new Error('Failed to load ' + url)); };
                         document.head.appendChild(s);
                     });
@@ -259,12 +259,12 @@ module.exports = function (RED) {
                 // ----------------------------------------------------------
                 // Scope state
                 // ----------------------------------------------------------
-                $scope.worldData      = null;
-                $scope.admin1Data     = null;
-                $scope.qth            = 'JJ00';
+                $scope.worldData = null;
+                $scope.admin1Data = null;
+                $scope.qth = 'JJ00';
                 $scope.currentAzimuth = 0;
-                $scope.targetAzimuth  = 0;
-                $scope.dxGrid         = '';
+                $scope.targetAzimuth = 0;
+                $scope.dxGrid = '';
                 $scope.allowedAzimuths = [];   // optional list of permitted target angles
 
                 // Snap an azimuth to the nearest allowed value (if any are configured)
@@ -279,11 +279,11 @@ module.exports = function (RED) {
                     return best;
                 }
                 $scope.snapAzimuth = snapAzimuth;
-                $scope.zoom        = 1.0;
-                $scope.targetZoom  = 1.0;
+                $scope.zoom = 1.0;
+                $scope.targetZoom = 1.0;
                 $scope.defaultZoom = 1.0;
-                $scope.panX        = 0.5;  // view pan, fraction of width  (clamped 0.25–0.75)
-                $scope.panY        = 0.5;  // view pan, fraction of height (clamped 0.25–0.75)
+                $scope.panX = 0.5;  // view pan, fraction of width  (clamped 0.25–0.75)
+                $scope.panY = 0.5;  // view pan, fraction of height (clamped 0.25–0.75)
                 $scope.alignedSince = Date.now() - 5001;  // treat initial state as already aligned if within 3°
 
                 // ----------------------------------------------------------
@@ -322,9 +322,9 @@ module.exports = function (RED) {
                 // A drag that starts near the QTH marker pans the view; anywhere
                 // else it zooms.
                 // ----------------------------------------------------------
-                var dragStart    = null;  // { x, y, mode } in client coords
+                var dragStart = null;  // { x, y, mode } in client coords
                 var dragZoomBase = 1.0;
-                var didDrag      = false;
+                var didDrag = false;
                 var QTH_GRAB_RADIUS = 22;  // px around the marker that grabs to pan
 
                 function onMouseMove(e) {
@@ -340,7 +340,7 @@ module.exports = function (RED) {
                         var g = getSvgGeometry();
                         if (!g) return;
                         var fx = clampPan((e.clientX - g.rect.left) / g.rect.width);
-                        var fy = clampPan((e.clientY - g.rect.top)  / g.rect.height);
+                        var fy = clampPan((e.clientY - g.rect.top) / g.rect.height);
                         if (fx !== $scope.panX || fy !== $scope.panY) {
                             $scope.panX = fx;
                             $scope.panY = fy;
@@ -350,7 +350,7 @@ module.exports = function (RED) {
                         // Drag to zoom: right/up → in, left/down → out (gradual)
                         var delta = (dx - dy) / 260;
                         var nz = Math.max(1.0, Math.min(20, dragZoomBase * Math.pow(2, delta)));
-                        $scope.zoom       = nz;
+                        $scope.zoom = nz;
                         $scope.targetZoom = nz;
                         if (zoomAnimFrame) { cancelAnimationFrame(zoomAnimFrame); zoomAnimFrame = null; }
                         $scope.drawMap();
@@ -364,26 +364,26 @@ module.exports = function (RED) {
                 // replace the element under the cursor between mousedown and
                 // mouseup, so the browser never fires a real 'click'.
                 function onMouseUp(e) {
-                    var wasDrag    = didDrag;
+                    var wasDrag = didDrag;
                     var startedHere = dragStart && dragStart.onSvg;
                     dragStart = null;
-                    didDrag   = false;
+                    didDrag = false;
                     if (wasDrag || !startedHere) return;
                     selectTargetAt(e.clientX, e.clientY);
                 }
 
                 document.addEventListener('mousemove', onMouseMove);
-                document.addEventListener('mouseup',   onMouseUp);
+                document.addEventListener('mouseup', onMouseUp);
 
                 $scope.$on('$destroy', function () {
                     document.removeEventListener('mousemove', onMouseMove);
-                    document.removeEventListener('mouseup',   onMouseUp);
+                    document.removeEventListener('mouseup', onMouseUp);
                     if (zoomAnimFrame) { cancelAnimationFrame(zoomAnimFrame); }
                     if ($scope._graylineTimer) { clearInterval($scope._graylineTimer); }
                     var el = document.getElementById('rotator-' + $scope.$id);
                     if (el) {
                         el.removeEventListener('mousedown', onSvgMouseDown);
-                        el.removeEventListener('wheel',     onSvgWheel);
+                        el.removeEventListener('wheel', onSvgWheel);
                     }
                 });
 
@@ -413,7 +413,7 @@ module.exports = function (RED) {
                     // Zoom reset button hit-test (if currently shown)
                     var b = $scope._zoomBtnRect;
                     if (b && localX >= b.x && localX <= b.x + b.w &&
-                            localY >= b.y && localY <= b.y + b.h) {
+                        localY >= b.y && localY <= b.y + b.h) {
                         $scope.panX = 0.5; $scope.panY = 0.5;
                         requestZoomTo($scope.defaultZoom);
                         return;
@@ -440,7 +440,7 @@ module.exports = function (RED) {
                     var dy = localY - oy;
                     var az = (Math.atan2(dx, -dy) * 180 / Math.PI + 360) % 360;
                     $scope.targetAzimuth = $scope.allowedAzimuths.length ? snapAzimuth(az) : Math.round(az);
-                    $scope.alignedSince  = null;
+                    $scope.alignedSince = null;
                     $scope.drawMap();
                     $scope.send({ payload: $scope.targetAzimuth, topic: 'targetAzimuth' });
                 }
@@ -453,9 +453,9 @@ module.exports = function (RED) {
                         var lx = event.clientX - g.rect.left, ly = event.clientY - g.rect.top;
                         if (Math.hypot(lx - $scope._qx, ly - $scope._qy) <= QTH_GRAB_RADIUS) mode = 'pan';
                     }
-                    dragStart    = { x: event.clientX, y: event.clientY, onSvg: true, mode: mode };
+                    dragStart = { x: event.clientX, y: event.clientY, onSvg: true, mode: mode };
                     dragZoomBase = $scope.zoom;
-                    didDrag      = false;
+                    didDrag = false;
                 }
 
                 function onSvgWheel(event) {
@@ -470,41 +470,41 @@ module.exports = function (RED) {
                     if (!el) return;
                     el.style.userSelect = 'none';
                     el.addEventListener('mousedown', onSvgMouseDown);
-                    el.addEventListener('wheel',     onSvgWheel, { passive: false });
+                    el.addEventListener('wheel', onSvgWheel, { passive: false });
                 }, 0);
                 $scope.colors = {
-                    ocean:               '#76acd6',
-                    land:                '#9e7e3d',
-                    landOutline:         '#5c402e',
-                    landOutlineOpacity:  100,
-                    current:             '#001ef9',
-                    currentOpacity:      100,
-                    target:              '#ff4400',
-                    targetOpacity:       100,
-                    aligned:             '#000000',
-                    alignedOpacity:      100,
-                    equator:             '#555555',
-                    equatorOpacity:      70,
-                    polarCircles:        '#555555',
+                    ocean: '#76acd6',
+                    land: '#9e7e3d',
+                    landOutline: '#5c402e',
+                    landOutlineOpacity: 100,
+                    current: '#001ef9',
+                    currentOpacity: 100,
+                    target: '#ff4400',
+                    targetOpacity: 100,
+                    aligned: '#000000',
+                    alignedOpacity: 100,
+                    equator: '#555555',
+                    equatorOpacity: 70,
+                    polarCircles: '#555555',
                     polarCirclesOpacity: 55,
-                    graticule:           '#444444',
-                    graticuleOpacity:    40,
-                    dxDot:               '#ff0000',
-                    dxDotOpacity:        100
+                    graticule: '#444444',
+                    graticuleOpacity: 40,
+                    dxDot: '#ff0000',
+                    dxDotOpacity: 100
                 };
                 $scope.latLineWidth = 0.4;
-                $scope.beamWidth    = 30;
-                $scope.showLogo     = true;
-                $scope.gridMin      = 6;
+                $scope.beamWidth = 30;
+                $scope.showLogo = true;
+                $scope.gridMin = 6;
                 $scope.showGrayline = false;
 
                 // ----------------------------------------------------------
                 // Called by ng-init with values from node config
                 // ----------------------------------------------------------
                 $scope.init = function (qth, currentAz, targetAz, colors, latLineWidth, defaultZoom, beamWidth, showLogo, gridMin, showGrayline, dxGrid, allowedAzimuths) {
-                    $scope.qth            = qth || 'JJ00';
+                    $scope.qth = qth || 'JJ00';
                     $scope.currentAzimuth = parseFloat(currentAz) || 0;
-                    $scope.targetAzimuth  = parseFloat(targetAz)  || 0;
+                    $scope.targetAzimuth = parseFloat(targetAz) || 0;
                     if (dxGrid != null) { $scope.dxGrid = String(dxGrid).toUpperCase(); }
                     if (allowedAzimuths != null) {
                         $scope.allowedAzimuths = String(allowedAzimuths).split(',')
@@ -517,13 +517,13 @@ module.exports = function (RED) {
                     }
                     if (colors && typeof colors === 'object') { $scope.colors = colors; }
                     if (latLineWidth) { $scope.latLineWidth = parseFloat(latLineWidth); }
-                    if (defaultZoom)  {
+                    if (defaultZoom) {
                         $scope.defaultZoom = parseFloat(defaultZoom);
-                        $scope.zoom        = $scope.defaultZoom;
+                        $scope.zoom = $scope.defaultZoom;
                     }
                     if (beamWidth != null) { $scope.beamWidth = parseFloat(beamWidth); }
                     if (showLogo != null) { $scope.showLogo = !!showLogo; }
-                    if (gridMin != null)  { $scope.gridMin  = parseInt(gridMin, 10) || 6; }
+                    if (gridMin != null) { $scope.gridMin = parseInt(gridMin, 10) || 6; }
                     if (showGrayline != null) { $scope.showGrayline = !!showGrayline; }
 
                     // Grayline terminator moves with time — redraw every minute while shown
@@ -539,21 +539,21 @@ module.exports = function (RED) {
                         loadScript('https://cdn.jsdelivr.net/npm/topojson-client@3/dist/topojson-client.min.js',
                             function () { return typeof window.topojson !== 'undefined' && typeof window.topojson.feature === 'function'; })
                     ])
-                    .then(function () {
-                        return Promise.all([
-                            fetch('https://cdn.jsdelivr.net/npm/world-atlas@2/countries-110m.json').then(function (r) { return r.json(); }),
-                            fetch('/h2k-rotator/admin1.geojson').then(function (r) { return r.json(); })
-                        ]);
-                    })
-                    .then(function (results) {
-                        $scope.worldData  = results[0];
-                        $scope.admin1Data = results[1];
-                        // Defer slightly so the SVG has been laid out by the browser
-                        setTimeout(function () { $scope.drawMap(); }, 120);
-                    })
-                    .catch(function (err) {
-                        console.error('[h2k-rotator] map load error:', err);
-                    });
+                        .then(function () {
+                            return Promise.all([
+                                fetch('https://cdn.jsdelivr.net/npm/world-atlas@2/countries-110m.json').then(function (r) { return r.json(); }),
+                                fetch('/h2k-rotator/admin1.geojson').then(function (r) { return r.json(); })
+                            ]);
+                        })
+                        .then(function (results) {
+                            $scope.worldData = results[0];
+                            $scope.admin1Data = results[1];
+                            // Defer slightly so the SVG has been laid out by the browser
+                            setTimeout(function () { $scope.drawMap(); }, 120);
+                        })
+                        .catch(function (err) {
+                            console.error('[h2k-rotator] map load error:', err);
+                        });
                 };
 
                 // ----------------------------------------------------------
@@ -562,7 +562,7 @@ module.exports = function (RED) {
                 $scope.drawMap = function () {
                     if (!$scope.worldData || typeof window.d3 === 'undefined') return;
 
-                    var d3       = window.d3;
+                    var d3 = window.d3;
                     var topojson = window.topojson;
 
                     var svgEl = document.getElementById('rotator-' + $scope.$id);
@@ -615,9 +615,9 @@ module.exports = function (RED) {
                         return Math.min(R * (1 - 0.5 * n), halfW, halfH);
                     }
                     var rTL = cornerR(-1, -1);
-                    var rTR = cornerR( 1, -1);
-                    var rBR = cornerR( 1,  1);
-                    var rBL = cornerR(-1,  1);
+                    var rTR = cornerR(1, -1);
+                    var rBR = cornerR(1, 1);
+                    var rBL = cornerR(-1, 1);
 
                     // Build the border polygon (clip + ocean outline + rose reference)
                     var clipPts = [];
@@ -628,10 +628,10 @@ module.exports = function (RED) {
                             clipPts.push([ox + rr * Math.cos(a), oy + rr * Math.sin(a)]);
                         }
                     }
-                    arcPush(left + rTL,  top + rTL,    rTL, Math.PI,       Math.PI * 1.5);
-                    arcPush(right - rTR, top + rTR,    rTR, Math.PI * 1.5, Math.PI * 2);
-                    arcPush(right - rBR, bottom - rBR, rBR, 0,             Math.PI * 0.5);
-                    arcPush(left + rBL,  bottom - rBL, rBL, Math.PI * 0.5, Math.PI);
+                    arcPush(left + rTL, top + rTL, rTL, Math.PI, Math.PI * 1.5);
+                    arcPush(right - rTR, top + rTR, rTR, Math.PI * 1.5, Math.PI * 2);
+                    arcPush(right - rBR, bottom - rBR, rBR, 0, Math.PI * 0.5);
+                    arcPush(left + rBL, bottom - rBL, rBL, Math.PI * 0.5, Math.PI);
 
                     function ptsToPath(pts) {
                         return 'M' + pts.map(function (p) { return p[0].toFixed(1) + ',' + p[1].toFixed(1); }).join('L') + 'Z';
@@ -670,7 +670,7 @@ module.exports = function (RED) {
                     var lat = latlon[0], lon = latlon[1];
 
                     var scalePxPerDeg = (radius / Math.PI * $scope.zoom) * (Math.PI / 180);
-                    var clipAngleDeg  = Math.min(179.9, maxBorderDist / scalePxPerDeg);
+                    var clipAngleDeg = Math.min(179.9, maxBorderDist / scalePxPerDeg);
                     var projection = d3.geoAzimuthalEquidistant()
                         .rotate([-lon, -lat])
                         .scale(radius / Math.PI * $scope.zoom)
@@ -684,7 +684,7 @@ module.exports = function (RED) {
                     svg.selectAll('*').remove();
 
                     // Defs: clip path + arrow markers
-                    var defs   = svg.append('defs');
+                    var defs = svg.append('defs');
                     var clipId = 'globe-clip-' + $scope.$id;
                     defs.append('clipPath').attr('id', clipId)
                         .append('path')
@@ -770,10 +770,10 @@ module.exports = function (RED) {
                         var now = new Date();
                         // Solar declination (deg) from day-of-year approximation
                         var yStart = Date.UTC(now.getUTCFullYear(), 0, 0);
-                        var dayN   = Math.floor((now - yStart) / 86400000);
-                        var decl   = -23.44 * Math.cos((2 * Math.PI / 365) * (dayN + 10));
+                        var dayN = Math.floor((now - yStart) / 86400000);
+                        var decl = -23.44 * Math.cos((2 * Math.PI / 365) * (dayN + 10));
                         // Sub-solar longitude (deg): solar noon ≈ 0° at 12:00 UTC
-                        var utcH   = now.getUTCHours() + now.getUTCMinutes() / 60 + now.getUTCSeconds() / 3600;
+                        var utcH = now.getUTCHours() + now.getUTCMinutes() / 60 + now.getUTCSeconds() / 3600;
                         var lonSun = -15 * (utcH - 12);
                         // Night hemisphere = antipode of the sub-solar point
                         var nightCenter = [lonSun + 180, -decl];
@@ -799,9 +799,9 @@ module.exports = function (RED) {
                     // Significant latitude lines – drawn after land so they show on both ocean and land
                     var lw = $scope.latLineWidth;
                     var latLines = [
-                        { lat:   0,    color: C.equator,      opacity: C.equatorOpacity / 100,      width: lw * 1.2 },
-                        { lat:  66.5,  color: C.polarCircles, opacity: C.polarCirclesOpacity / 100, width: lw },
-                        { lat: -66.5,  color: C.polarCircles, opacity: C.polarCirclesOpacity / 100, width: lw }
+                        { lat: 0, color: C.equator, opacity: C.equatorOpacity / 100, width: lw * 1.2 },
+                        { lat: 66.5, color: C.polarCircles, opacity: C.polarCirclesOpacity / 100, width: lw },
+                        { lat: -66.5, color: C.polarCircles, opacity: C.polarCirclesOpacity / 100, width: lw }
                     ];
                     latLines.forEach(function (l) {
                         var coords = [];
@@ -817,16 +817,16 @@ module.exports = function (RED) {
 
                     // ------ Degree tick marks (laid on the outer border) ------
                     for (var deg = 0; deg < 360; deg += 10) {
-                        var isMajor   = (deg % 30 === 0);
-                        var tickLen   = isMajor ? 9 : 5;
-                        var rad       = deg * Math.PI / 180;
-                        var bd        = borderDist(rad);
-                        var innerR    = bd - tickLen;
+                        var isMajor = (deg % 30 === 0);
+                        var tickLen = isMajor ? 9 : 5;
+                        var rad = deg * Math.PI / 180;
+                        var bd = borderDist(rad);
+                        var innerR = bd - tickLen;
                         svg.append('line')
-                            .attr('x1', qx + innerR  * Math.sin(rad))
-                            .attr('y1', qy - innerR  * Math.cos(rad))
-                            .attr('x2', qx + bd  * Math.sin(rad))
-                            .attr('y2', qy - bd  * Math.cos(rad))
+                            .attr('x1', qx + innerR * Math.sin(rad))
+                            .attr('y1', qy - innerR * Math.cos(rad))
+                            .attr('x2', qx + bd * Math.sin(rad))
+                            .attr('y2', qy - bd * Math.cos(rad))
                             .attr('stroke', '#333')
                             .attr('stroke-width', isMajor ? 1.5 : 0.8);
                     }
@@ -834,7 +834,7 @@ module.exports = function (RED) {
                     // ------ Allowed-azimuth markers (6× thicker, on the border) ------
                     $scope.allowedAzimuths.forEach(function (deg) {
                         var rad = deg * Math.PI / 180;
-                        var bd  = borderDist(rad);
+                        var bd = borderDist(rad);
                         var innerR = bd - 12;
                         svg.append('line')
                             .attr('x1', qx + innerR * Math.sin(rad))
@@ -880,7 +880,7 @@ module.exports = function (RED) {
                                     .style('stroke-width', 1)
                                     .style('stroke-opacity', (C.dxDotOpacity != null ? C.dxDotOpacity : 100) / 100)
                                     .style('pointer-events', 'none')
-                                  .append('title')
+                                    .append('title')
                                     .text('DX: ' + $scope.dxGrid);
                             }
                         }
@@ -908,15 +908,15 @@ module.exports = function (RED) {
 
                     // ------ Beam width wedge ------
                     if ($scope.beamWidth > 0) {
-                        var bw       = $scope.beamWidth;
+                        var bw = $scope.beamWidth;
                         var beamColor = aligned ? C.aligned : C.current;
                         var beamBaseOpacity = aligned ? C.alignedOpacity / 100 : C.currentOpacity / 100;
-                        var halfRad  = (bw / 2) * Math.PI / 180;
+                        var halfRad = (bw / 2) * Math.PI / 180;
                         var cRadBeam = $scope.currentAzimuth * Math.PI / 180;
-                        var leftRad  = cRadBeam - halfRad;
+                        var leftRad = cRadBeam - halfRad;
                         var rightRad = cRadBeam + halfRad;
                         var beamR = Math.max(W, H) * 2;  // extends well past the view; clip path trims it
-                        var x1 = qx + beamR * Math.sin(leftRad),  y1 = qy - beamR * Math.cos(leftRad);
+                        var x1 = qx + beamR * Math.sin(leftRad), y1 = qy - beamR * Math.cos(leftRad);
                         var x2 = qx + beamR * Math.sin(rightRad), y2 = qy - beamR * Math.cos(rightRad);
                         var largeArc = bw >= 180 ? 1 : 0;
 
@@ -925,9 +925,9 @@ module.exports = function (RED) {
                         // filled wedge
                         beamG.append('path')
                             .attr('d', 'M' + qx + ',' + qy +
-                                       ' L' + x1 + ',' + y1 +
-                                       ' A' + beamR + ',' + beamR + ' 0 ' + largeArc + ' 1 ' + x2 + ',' + y2 +
-                                       ' Z')
+                                ' L' + x1 + ',' + y1 +
+                                ' A' + beamR + ',' + beamR + ' 0 ' + largeArc + ' 1 ' + x2 + ',' + y2 +
+                                ' Z')
                             .style('fill', beamColor)
                             .style('fill-opacity', beamBaseOpacity * 0.2)
                             .style('stroke', 'none');
@@ -951,7 +951,7 @@ module.exports = function (RED) {
 
                     if (!aligned) {
                         // Target azimuth
-                        var tId  = 'arrow-tgt-' + $scope.$id;
+                        var tId = 'arrow-tgt-' + $scope.$id;
                         arrowMarker(tId, C.target);
                         var trad = $scope.targetAzimuth * Math.PI / 180;
                         var tLineR = borderDist(trad) - 6;
@@ -966,9 +966,9 @@ module.exports = function (RED) {
                     }
 
                     // Current azimuth
-                    var curColor   = aligned ? C.aligned : C.current;
+                    var curColor = aligned ? C.aligned : C.current;
                     var curOpacity = aligned ? C.alignedOpacity / 100 : C.currentOpacity / 100;
-                    var cId  = 'arrow-cur-' + $scope.$id;
+                    var cId = 'arrow-cur-' + $scope.$id;
                     arrowMarker(cId, curColor);
                     var crad = $scope.currentAzimuth * Math.PI / 180;
                     var cLineR = borderDist(crad) - 6;
@@ -1011,9 +1011,9 @@ module.exports = function (RED) {
                     hudW = Math.max(hudW, 40);
 
                     // background rect — convert hex to rgba for SVG fill
-                    var hr = parseInt(hudBgColor.slice(1,3),16);
-                    var hg = parseInt(hudBgColor.slice(3,5),16);
-                    var hb = parseInt(hudBgColor.slice(5,7),16);
+                    var hr = parseInt(hudBgColor.slice(1, 3), 16);
+                    var hg = parseInt(hudBgColor.slice(3, 5), 16);
+                    var hb = parseInt(hudBgColor.slice(5, 7), 16);
                     svg.append('rect')
                         .attr('x', 8).attr('y', 8)
                         .attr('width', hudW).attr('height', hudH)

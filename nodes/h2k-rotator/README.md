@@ -2,7 +2,7 @@
 
 A Node-RED Dashboard 1.0 widget for controlling and visualising antenna rotators.
 
-Part of the [`@ham2k/red-ham-tools`](../../README.md) package.
+Part of the [`@ham2k/red-ham-toolkit`](../../README.md) package.
 
 ## Goals
 
