@@ -302,10 +302,14 @@ module.exports = function (RED) {
                 function clampPan(v) { return Math.max(PAN_MIN, Math.min(PAN_MAX, v)); }
 
                 // ----------------------------------------------------------
-                // Drag-to-pan state (lives here so window handlers are added once)
+                // Drag state (lives here so window handlers are added once).
+                // A drag that starts near the QTH marker pans the view; anywhere
+                // else it zooms.
                 // ----------------------------------------------------------
-                var dragStart    = null;  // { x, y } in client coords
+                var dragStart    = null;  // { x, y, mode } in client coords
+                var dragZoomBase = 1.0;
                 var didDrag      = false;
+                var QTH_GRAB_RADIUS = 22;  // px around the marker that grabs to pan
 
                 function onMouseMove(e) {
                     if (!dragStart) return;
@@ -313,15 +317,26 @@ module.exports = function (RED) {
                     var dy = e.clientY - dragStart.y;
                     if (!didDrag && (Math.abs(dx) > 4 || Math.abs(dy) > 4)) { didDrag = true; }
                     if (!didDrag) return;
-                    // Drag moves the QTH gradually; only when zoomed in ≥ 1.8×.
-                    if ($scope.zoom < 1.8) return;
-                    var g = getSvgGeometry();
-                    if (!g) return;
-                    var fx = clampPan((e.clientX - g.rect.left) / g.rect.width);
-                    var fy = clampPan((e.clientY - g.rect.top)  / g.rect.height);
-                    if (fx !== $scope.panX || fy !== $scope.panY) {
-                        $scope.panX = fx;
-                        $scope.panY = fy;
+
+                    if (dragStart.mode === 'pan') {
+                        // Drag moves the QTH gradually; only when zoomed in ≥ 1.8×.
+                        if ($scope.zoom < 1.8) return;
+                        var g = getSvgGeometry();
+                        if (!g) return;
+                        var fx = clampPan((e.clientX - g.rect.left) / g.rect.width);
+                        var fy = clampPan((e.clientY - g.rect.top)  / g.rect.height);
+                        if (fx !== $scope.panX || fy !== $scope.panY) {
+                            $scope.panX = fx;
+                            $scope.panY = fy;
+                            $scope.drawMap();
+                        }
+                    } else {
+                        // Drag to zoom: right/up → in, left/down → out (gradual)
+                        var delta = (dx - dy) / 260;
+                        var nz = Math.max(1.0, Math.min(20, dragZoomBase * Math.pow(2, delta)));
+                        $scope.zoom       = nz;
+                        $scope.targetZoom = nz;
+                        if (zoomAnimFrame) { cancelAnimationFrame(zoomAnimFrame); zoomAnimFrame = null; }
                         $scope.drawMap();
                     }
                 }
@@ -415,13 +430,21 @@ module.exports = function (RED) {
                 }
 
                 function onSvgMouseDown(event) {
-                    dragStart = { x: event.clientX, y: event.clientY, onSvg: true };
-                    didDrag   = false;
+                    // Pan if the press lands near the QTH marker; otherwise zoom.
+                    var mode = 'zoom';
+                    var g = getSvgGeometry();
+                    if (g && $scope._qx != null) {
+                        var lx = event.clientX - g.rect.left, ly = event.clientY - g.rect.top;
+                        if (Math.hypot(lx - $scope._qx, ly - $scope._qy) <= QTH_GRAB_RADIUS) mode = 'pan';
+                    }
+                    dragStart    = { x: event.clientX, y: event.clientY, onSvg: true, mode: mode };
+                    dragZoomBase = $scope.zoom;
+                    didDrag      = false;
                 }
 
                 function onSvgWheel(event) {
                     event.preventDefault();
-                    var factor = event.deltaY < 0 ? 1.08 : 1 / 1.08;
+                    var factor = event.deltaY < 0 ? 1.04 : 1 / 1.04;
                     requestZoomTo($scope.targetZoom * factor);
                 }
 
