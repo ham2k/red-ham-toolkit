@@ -9,7 +9,7 @@ node-specific usage and testing, see each node's `README.md` (e.g.
 
 - [Node.js](https://nodejs.org/) 18 or later
 - [Node-RED](https://nodered.org/) installed globally or locally
-- `node-red-dashboard` 2.x installed in your Node-RED user directory
+- `node-red-dashboard` (the classic Dashboard 1.0 package; v2 or v3) installed in your Node-RED user directory
 
 Install Node-RED and the dashboard if you haven't already:
 

@@ -1,6 +1,6 @@
 {
   "name": "@ham2k/red-ham-toolkit",
-  "version": "0.2.0",
+  "version": "0.2.1",
   "description": "Ham radio toolkit for Node-RED",
   "homepage": "https://github.com/ham2k/red-ham-toolkit",
   "keywords": [
@@ -18,6 +18,6 @@
     }
   },
   "peerDependencies": {
-    "node-red-dashboard": "2.x"
+    "node-red-dashboard": "^2.0.0 || ^3.0.0"
   }
 }
