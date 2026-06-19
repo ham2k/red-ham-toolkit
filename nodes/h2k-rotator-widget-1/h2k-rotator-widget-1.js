@@ -272,11 +272,11 @@ module.exports = function (RED) {
                     return best;
                 }
                 $scope.snapAzimuth = snapAzimuth;
-                $scope.zoom = 1.0;
-                $scope.targetZoom = 1.0;
-                $scope.defaultZoom = 1.0;
-                $scope.panX = 0.5;  // view pan, fraction of width  (clamped 0.25–0.75)
-                $scope.panY = 0.5;  // view pan, fraction of height (clamped 0.25–0.75)
+                $scope.zoom = 1.15;
+                $scope.targetZoom = 1.15;
+                $scope.defaultZoom = 1.15;
+                $scope.panX = 0.5;  // view pan intent, fraction of width  (clamped by maxPanOff in drawMap)
+                $scope.panY = 0.5;  // view pan intent, fraction of height (clamped by maxPanOff in drawMap)
                 $scope.alignedSince = Date.now() - 5001;  // treat initial state as already aligned if within 3°
 
                 // ----------------------------------------------------------
@@ -307,8 +307,17 @@ module.exports = function (RED) {
                 // ----------------------------------------------------------
                 // Pan limits: the QTH may move up to 25% in from each edge.
                 // ----------------------------------------------------------
-                var PAN_MIN = 0.25, PAN_MAX = 0.75;
-                function clampPan(v) { return Math.max(PAN_MIN, Math.min(PAN_MAX, v)); }
+                // Maximum pan offset from 0.5 as a function of zoom.
+                // At scale z the map covers radius*z px; for a square widget the
+                // far edge is at radius*(1+2*off). A 5% safety margin gives
+                // off <= (0.95*z-1)/2 before the geographic 180° edge appears.
+                function maxPanOff(z) {
+                    return Math.max(0, Math.min(0.25, (0.95 * z - 1) / 2));
+                }
+                function clampPan(v, z) {
+                    var off = maxPanOff(z || $scope.zoom);
+                    return Math.max(0.5 - off, Math.min(0.5 + off, v));
+                }
 
                 // ----------------------------------------------------------
                 // Drag state (lives here so window handlers are added once).
@@ -328,12 +337,10 @@ module.exports = function (RED) {
                     if (!didDrag) return;
 
                     if (dragStart.mode === 'pan') {
-                        // Drag moves the QTH gradually; only when zoomed in ≥ 1.8×.
-                        if ($scope.zoom < 1.8) return;
                         var g = getSvgGeometry();
                         if (!g) return;
-                        var fx = clampPan((e.clientX - g.rect.left) / g.rect.width);
-                        var fy = clampPan((e.clientY - g.rect.top) / g.rect.height);
+                        var fx = clampPan((e.clientX - g.rect.left) / g.rect.width, $scope.zoom);
+                        var fy = clampPan((e.clientY - g.rect.top) / g.rect.height, $scope.zoom);
                         if (fx !== $scope.panX || fy !== $scope.panY) {
                             $scope.panX = fx;
                             $scope.panY = fy;
@@ -570,8 +577,8 @@ module.exports = function (RED) {
 
                     // ----- View pan: QTH (qx,qy) moves gradually toward an edge -----
                     // Panning only applies once zoomed in to at least 1.8×.
-                    var panX = ($scope.zoom >= 1.8) ? $scope.panX : 0.5;
-                    var panY = ($scope.zoom >= 1.8) ? $scope.panY : 0.5;
+                    var panX = clampPan($scope.panX, $scope.zoom);
+                    var panY = clampPan($scope.panY, $scope.zoom);
                     var qx = panX * W;   // QTH screen position = projection translate = rose centre
                     var qy = panY * H;
 
