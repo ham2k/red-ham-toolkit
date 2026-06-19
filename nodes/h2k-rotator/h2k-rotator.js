@@ -831,7 +831,7 @@ module.exports = function (RED) {
                             .attr('stroke-width', isMajor ? 1.5 : 0.8);
                     }
 
-                    // ------ Allowed-azimuth markers (3× thicker, on the border) ------
+                    // ------ Allowed-azimuth markers (6× thicker, on the border) ------
                     $scope.allowedAzimuths.forEach(function (deg) {
                         var rad = deg * Math.PI / 180;
                         var bd  = borderDist(rad);
@@ -842,7 +842,7 @@ module.exports = function (RED) {
                             .attr('x2', qx + bd * Math.sin(rad))
                             .attr('y2', qy - bd * Math.cos(rad))
                             .attr('stroke', '#333')
-                            .attr('stroke-width', 4.5)
+                            .attr('stroke-width', 9)
                             .attr('stroke-linecap', 'round');
                     });
 
