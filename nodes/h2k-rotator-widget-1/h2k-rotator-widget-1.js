@@ -105,6 +105,7 @@ module.exports = function (RED) {
         var defaultZoom = Math.max(1.0, Math.min(20, parseFloat(config.defaultZoom) || 1.0));
         var beamWidth = Math.max(0, Math.min(180, parseFloat(config.beamWidth) || 30));
         var showGrayline = (config.showGrayline === undefined) ? true : !!config.showGrayline;
+        var showAzimuthInMap = (config.showAzimuthInMap === undefined) ? true : !!config.showAzimuthInMap;
         // Comma-separated allowed azimuths; keep only safe chars for the ng-init string
         var safeAllowed = (config.allowedAzimuths || '').replace(/[^0-9.,\s-]/g, '').substring(0, 300);
 
@@ -142,7 +143,7 @@ module.exports = function (RED) {
             label: config.label,
 
             format: '<div style="width:100%;height:100%;padding:0;margin:0;box-sizing:border-box;"' +
-                ' ng-init="init(\'' + safeQth + '\',' + safeCurrent + ',' + safeTarget + ',' + colorsLiteral + ',' + latLineWidth + ',' + defaultZoom + ',' + beamWidth + ',' + showGrayline + ',\'' + safeDxGrid + '\',\'' + safeAllowed + '\')">' +
+                ' ng-init="init(\'' + safeQth + '\',' + safeCurrent + ',' + safeTarget + ',' + colorsLiteral + ',' + latLineWidth + ',' + defaultZoom + ',' + beamWidth + ',' + showGrayline + ',\'' + safeDxGrid + '\',\'' + safeAllowed + '\',' + showAzimuthInMap + ')">' +
                 '<svg id="rotator-{{$id}}" style="display:block;width:100%;height:100%;overflow:visible;"></svg>' +
                 '</div>',
 
@@ -272,6 +273,16 @@ module.exports = function (RED) {
                     return best;
                 }
                 $scope.snapAzimuth = snapAzimuth;
+
+                function contrastColor(hex) {
+                    var h = (hex || '#000').replace('#', '');
+                    if (h.length === 3) h = h[0]+h[0]+h[1]+h[1]+h[2]+h[2];
+                    var r = parseInt(h.substr(0,2),16)/255;
+                    var g = parseInt(h.substr(2,2),16)/255;
+                    var b = parseInt(h.substr(4,2),16)/255;
+                    return (0.299*r + 0.587*g + 0.114*b) > 0.55 ? '#000' : '#fff';
+                }
+
                 $scope.zoom = 1.15;
                 $scope.targetZoom = 1.15;
                 $scope.defaultZoom = 1.15;
@@ -495,11 +506,12 @@ module.exports = function (RED) {
                 $scope.latLineWidth = 0.4;
                 $scope.beamWidth = 30;
                 $scope.showGrayline = false;
+                $scope.showAzimuthInMap = true;
 
                 // ----------------------------------------------------------
                 // Called by ng-init with values from node config
                 // ----------------------------------------------------------
-                $scope.init = function (qth, currentAz, targetAz, colors, latLineWidth, defaultZoom, beamWidth, showGrayline, dxGrid, allowedAzimuths) {
+                $scope.init = function (qth, currentAz, targetAz, colors, latLineWidth, defaultZoom, beamWidth, showGrayline, dxGrid, allowedAzimuths, showAzimuthInMap) {
                     $scope.qth = qth || 'JJ00';
                     $scope.currentAzimuth = parseFloat(currentAz) || 0;
                     $scope.targetAzimuth = parseFloat(targetAz) || 0;
@@ -521,6 +533,7 @@ module.exports = function (RED) {
                     }
                     if (beamWidth != null) { $scope.beamWidth = parseFloat(beamWidth); }
                     if (showGrayline != null) { $scope.showGrayline = !!showGrayline; }
+                    if (showAzimuthInMap != null) { $scope.showAzimuthInMap = !!showAzimuthInMap; }
 
                     // Grayline terminator moves with time — redraw every minute while shown
                     if ($scope.showGrayline && !$scope._graylineTimer) {
@@ -697,6 +710,29 @@ module.exports = function (RED) {
                             .attr('d', 'M0,-4L8,0L0,4Z')
                             .style('fill', color)
                             .style('stroke', 'none');
+                    }
+
+                    // Pill label at distance r from QTH along rad.
+                    function drawAzLabel(rad, color, text, r) {
+                        var lx = qx + r * Math.sin(rad);
+                        var ly = qy - r * Math.cos(rad);
+                        var PW = 40, PH = 18;
+                        var g = svg.append('g');
+                        g.append('rect')
+                            .attr('x', lx - PW / 2).attr('y', ly - PH / 2)
+                            .attr('width', PW).attr('height', PH)
+                            .attr('rx', 4).attr('ry', 4)
+                            .style('fill', color);
+                        g.append('text')
+                            .attr('x', lx).attr('y', ly)
+                            .attr('text-anchor', 'middle')
+                            .attr('dominant-baseline', 'middle')
+                            .attr('font-size', '13px')
+                            .attr('font-family', 'monospace')
+                            .attr('font-weight', 'bold')
+                            .style('fill', contrastColor(color))
+                            .style('pointer-events', 'none')
+                            .text(text);
                     }
 
                     var C = $scope.colors;
@@ -944,6 +980,9 @@ module.exports = function (RED) {
                             .attr('stroke-opacity', C.targetOpacity / 100)
                             .attr('stroke-width', 2)
                             .attr('marker-end', 'url(#' + tId + ')');
+                        if ($scope.showAzimuthInMap) {
+                            drawAzLabel(trad, C.target, Math.round($scope.targetAzimuth) + '°', 0.7 * tLineR);
+                        }
                     }
 
                     // Current azimuth
@@ -962,9 +1001,49 @@ module.exports = function (RED) {
                         .attr('stroke-width', 2.5)
                         .attr('marker-end', 'url(#' + cId + ')');
 
-                    // QTH dot (at the anchor)
-                    svg.append('circle').attr('cx', qx).attr('cy', qy).attr('r', 5)
-                        .attr('fill', '#222').attr('stroke', 'white').attr('stroke-width', 1.5);
+                    if ($scope.showAzimuthInMap) {
+                        // QTH pill — current azimuth (aligned color when matched)
+                        var qthColor = aligned ? C.aligned : C.current;
+                        var QW = 40, QH = 18;
+                        svg.append('rect')
+                            .attr('x', qx - QW / 2).attr('y', qy - QH / 2)
+                            .attr('width', QW).attr('height', QH)
+                            .attr('rx', 4).attr('ry', 4)
+                            .style('fill', qthColor);
+                        svg.append('text')
+                            .attr('x', qx).attr('y', qy)
+                            .attr('text-anchor', 'middle')
+                            .attr('dominant-baseline', 'middle')
+                            .attr('font-size', '13px')
+                            .attr('font-family', 'monospace')
+                            .attr('font-weight', 'bold')
+                            .style('fill', contrastColor(qthColor))
+                            .style('pointer-events', 'none')
+                            .text(Math.round($scope.currentAzimuth) + '°');
+                    } else {
+                        // QTH dot
+                        svg.append('circle').attr('cx', qx).attr('cy', qy).attr('r', 5)
+                            .attr('fill', '#222').attr('stroke', 'white').attr('stroke-width', 1.5);
+
+                        // HUD: current top-left, target top-right when unmatched
+                        var hudY = 22;
+                        svg.append('text')
+                            .attr('x', 10).attr('y', hudY)
+                            .attr('text-anchor', 'start')
+                            .attr('font-size', '17px')
+                            .attr('font-family', 'monospace')
+                            .style('fill', aligned ? C.aligned : C.current)
+                            .text(Math.round($scope.currentAzimuth) + '°');
+                        if (!aligned) {
+                            var tgtEl = svg.append('text')
+                                .attr('x', W - 10).attr('y', hudY)
+                                .attr('text-anchor', 'end')
+                                .attr('font-size', '17px')
+                                .attr('font-family', 'monospace');
+                            tgtEl.append('tspan').style('fill', C.aligned).text('➜ ');
+                            tgtEl.append('tspan').style('fill', C.target).text(Math.round($scope.targetAzimuth) + '°');
+                        }
+                    }
 
                     // ------ Cardinal labels (no background, black, above arrows) ------
                     var cardinals = [['N', 0], ['E', 90], ['S', 180], ['W', 270]];
@@ -983,28 +1062,6 @@ module.exports = function (RED) {
                             .attr('fill', '#000')
                             .text(c[0]);
                     });
-
-                    // ------ HUD readout (no background) ------
-                    // Current azimuth top-left; target top-right (arrow-prefixed),
-                    // shown only while not matched.
-                    var hudY = 22;
-                    svg.append('text')
-                        .attr('x', 10).attr('y', hudY)
-                        .attr('text-anchor', 'start')
-                        .attr('font-size', '17px')
-                        .attr('font-family', 'monospace')
-                        .style('fill', aligned ? C.aligned : C.current)
-                        .text(Math.round($scope.currentAzimuth) + '°');
-
-                    if (!aligned) {
-                        var tgtEl = svg.append('text')
-                            .attr('x', W - 10).attr('y', hudY)
-                            .attr('text-anchor', 'end')
-                            .attr('font-size', '17px')
-                            .attr('font-family', 'monospace');
-                        tgtEl.append('tspan').style('fill', C.aligned).text('➜ ');
-                        tgtEl.append('tspan').style('fill', C.target).text(Math.round($scope.targetAzimuth) + '°');
-                    }
 
                     // ------ View reset button (bottom-right; only when zoomed/panned off default) ------
                     // Hit-testing is done in the document-level mouseup handler
