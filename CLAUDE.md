@@ -9,7 +9,7 @@ The package is designed to host **multiple** nodes. Each node lives in its own f
 
 | Node type | Folder | Description |
 |-----------|--------|-------------|
-| `h2k-rotator` | [`nodes/h2k-rotator/`](nodes/h2k-rotator/README.md) | Antenna rotator widget: azimuthal-equidistant world map with current/target azimuth indicators |
+| `h2k-rotator-widget-1` | [`nodes/h2k-rotator-widget-1/`](nodes/h2k-rotator-widget-1/README.md) | Antenna rotator widget: azimuthal-equidistant world map with current/target azimuth indicators |
 
 See each node's `README.md` for its parameters, inputs/outputs, behaviour, and node-specific
 notes.
@@ -22,9 +22,9 @@ assets/                            shared static assets (e.g. ham2k-square.svg)
 dev-tools/                         local development helpers
   restart-node-red.sh              stop + relaunch Node-RED
 nodes/
-  h2k-rotator/
-    h2k-rotator.js                 server-side node + serialised browser controller
-    h2k-rotator.html              editor config panel + help
+  h2k-rotator-widget-1/
+    h2k-rotator-widget-1.js                 server-side node + serialised browser controller
+    h2k-rotator-widget-1.html              editor config panel + help
     README.md                      node documentation
     data/                          per-node local data overrides (optional)
 ```

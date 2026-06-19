@@ -1,4 +1,4 @@
-# h2k-rotator
+# h2k-rotator-widget-1
 
 A Node-RED Dashboard 1.0 widget for controlling and visualising antenna rotators.
 
@@ -58,7 +58,7 @@ message that changes it; value-change only, so wiring the output back to the inp
   **topojson-client v3** + **world-atlas 110m**, all loaded from jsDelivr CDN at first render.
   An internet connection is required on the browser side.
 - Admin-1 boundaries (US/CAN/AUS) are proxied/cached server-side from Natural Earth 50m via
-  `/h2k-rotator/admin1.geojson`.
+  `/h2k-rotator-widget-1/admin1.geojson`.
 - The azimuth lines are straight radial lines from the map centre — correct because azimuthal
   equidistant projections preserve true bearings from the centre point.
 - Maidenhead-to-lat/lon conversion is implemented inline in the browser controller (no external
@@ -72,7 +72,7 @@ Once Node-RED is running with the package linked (see the package
 [CONTRIBUTING](../../CONTRIBUTING.md)), the **H2K Rotator** node appears in the **dashboard**
 section of the node palette.
 
-1. Drag an `h2k-rotator` node onto the canvas.
+1. Drag an `h2k-rotator-widget-1` node onto the canvas.
 2. Double-click it to open the config panel.
 3. Select (or create) a **Group** under a Dashboard tab.
 4. Set **QTH** to your Maidenhead grid locator (4 or 6 characters, e.g. `FN31`).
@@ -89,7 +89,7 @@ section of the node palette.
 
 ### Sending azimuth updates via Inject nodes
 
-Wire an **inject** node to the `h2k-rotator` input.
+Wire an **inject** node to the `h2k-rotator-widget-1` input.
 
 | Test | `msg` properties to set | Expected result |
 |------|--------------------------|-----------------|
@@ -130,7 +130,7 @@ Import this JSON into Node-RED (**Menu → Import**) for a ready-made test harne
   },
   {
     "id": "rotator-node",
-    "type": "h2k-rotator",
+    "type": "h2k-rotator-widget-1",
     "name": "My Rotator",
     "qth": "FN31",
     "currentAzimuth": 0,

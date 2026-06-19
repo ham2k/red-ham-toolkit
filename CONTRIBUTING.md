@@ -3,7 +3,7 @@
 This is the `@ham2k/red-ham-toolkit` package, which hosts multiple Node-RED Dashboard nodes
 under `nodes/`. This document covers package-wide setup and the development workflow. For
 node-specific usage and testing, see each node's `README.md` (e.g.
-[`nodes/h2k-rotator/README.md`](nodes/h2k-rotator/README.md)).
+[`nodes/h2k-rotator-widget-1/README.md`](nodes/h2k-rotator-widget-1/README.md)).
 
 ## Prerequisites
 
@@ -88,6 +88,6 @@ After it returns, hard-refresh the editor and dashboard browser tabs
 Each node is self-contained under `nodes/<node-type>/`. For how to install, configure, and
 manually test a node, see its `README.md`:
 
-- [`nodes/h2k-rotator/README.md`](nodes/h2k-rotator/README.md) — H2K Rotator widget
+- [`nodes/h2k-rotator-widget-1/README.md`](nodes/h2k-rotator-widget-1/README.md) — H2K Rotator widget
 
 To add a new node, see the "Adding a new node" section in [CLAUDE.md](CLAUDE.md).

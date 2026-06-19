@@ -1,6 +1,6 @@
 {
   "name": "@ham2k/red-ham-toolkit",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "description": "Ham radio toolkit for Node-RED",
   "homepage": "https://github.com/ham2k/red-ham-toolkit",
   "keywords": [
@@ -14,7 +14,7 @@
   "license": "MIT",
   "node-red": {
     "nodes": {
-      "h2k-rotator": "nodes/h2k-rotator/h2k-rotator.js"
+      "h2k-rotator-widget-1": "nodes/h2k-rotator-widget-1/h2k-rotator-widget-1.js"
     }
   },
   "peerDependencies": {

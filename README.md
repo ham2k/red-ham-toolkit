@@ -5,10 +5,10 @@
 Sebastián Delmont KI2D.
 
 <p align="center">
-  <img src="assets/h2k-rotator-screenshot.png" alt="H2K Rotator widget" width="420">
+  <img src="assets/h2k-rotator-widget-1-screenshot.png" alt="H2K Rotator widget" width="420">
 </p>
 
-## H2K Rotator
+## H2K Rotator Widget (for Dashboard 1.0)
 
 An antenna-rotator widget that shows an azimuthal-equidistant world map centred on your
 QTH, with live **current** and **target** azimuth indicators. Click the map to set a
@@ -23,7 +23,7 @@ Highlights:
 - Pan (grab the centre) and zoom; fully themeable colours and opacities.
 - Optional **allowed azimuths** that snap targets to fixed rotator stops.
 
-See [`nodes/h2k-rotator/README.md`](nodes/h2k-rotator/README.md) for full parameters,
+See [`nodes/h2k-rotator-widget-1/README.md`](nodes/h2k-rotator-widget-1/README.md) for full parameters,
 inputs/outputs, and setup.
 
 ## More coming soon
