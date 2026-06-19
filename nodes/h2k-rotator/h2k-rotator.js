@@ -110,6 +110,8 @@ module.exports = function (RED) {
         var showGrayline = (config.showGrayline === undefined) ? true : !!config.showGrayline;
         var gridMin      = Math.min(parseInt(config.width, 10)  || 6,
                                     parseInt(config.height, 10) || 6);
+        // Comma-separated allowed azimuths; keep only safe chars for the ng-init string
+        var safeAllowed  = (config.allowedAzimuths || '').replace(/[^0-9.,\s-]/g, '').substring(0, 300);
 
         // Build a JS object literal using single quotes so it embeds safely inside
         // the double-quoted ng-init HTML attribute (JSON.stringify would break it).
@@ -147,7 +149,7 @@ module.exports = function (RED) {
             label:  config.label,
 
             format: '<div style="width:100%;height:100%;padding:0;margin:0;box-sizing:border-box;"' +
-                    ' ng-init="init(\'' + safeQth + '\',' + safeCurrent + ',' + safeTarget + ',' + colorsLiteral + ',' + latLineWidth + ',' + defaultZoom + ',' + beamWidth + ',' + showLogo + ',' + gridMin + ',' + showGrayline + ',\'' + safeDxGrid + '\')">' +
+                    ' ng-init="init(\'' + safeQth + '\',' + safeCurrent + ',' + safeTarget + ',' + colorsLiteral + ',' + latLineWidth + ',' + defaultZoom + ',' + beamWidth + ',' + showLogo + ',' + gridMin + ',' + showGrayline + ',\'' + safeDxGrid + '\',\'' + safeAllowed + '\')">' +
                     '<svg id="rotator-{{$id}}" style="display:block;width:100%;height:100%;overflow:visible;"></svg>' +
                     '</div>',
 
@@ -263,6 +265,20 @@ module.exports = function (RED) {
                 $scope.currentAzimuth = 0;
                 $scope.targetAzimuth  = 0;
                 $scope.dxGrid         = '';
+                $scope.allowedAzimuths = [];   // optional list of permitted target angles
+
+                // Snap an azimuth to the nearest allowed value (if any are configured)
+                function snapAzimuth(az) {
+                    var list = $scope.allowedAzimuths;
+                    if (!list || !list.length) return az;
+                    var best = list[0], bestD = Infinity;
+                    for (var i = 0; i < list.length; i++) {
+                        var d = Math.abs(((az - list[i]) % 360 + 540) % 360 - 180);
+                        if (d < bestD) { bestD = d; best = list[i]; }
+                    }
+                    return best;
+                }
+                $scope.snapAzimuth = snapAzimuth;
                 $scope.zoom        = 1.0;
                 $scope.targetZoom  = 1.0;
                 $scope.defaultZoom = 1.0;
@@ -423,7 +439,7 @@ module.exports = function (RED) {
                     var dx = localX - ox;
                     var dy = localY - oy;
                     var az = (Math.atan2(dx, -dy) * 180 / Math.PI + 360) % 360;
-                    $scope.targetAzimuth = Math.round(az);
+                    $scope.targetAzimuth = $scope.allowedAzimuths.length ? snapAzimuth(az) : Math.round(az);
                     $scope.alignedSince  = null;
                     $scope.drawMap();
                     $scope.send({ payload: $scope.targetAzimuth, topic: 'targetAzimuth' });
@@ -485,11 +501,20 @@ module.exports = function (RED) {
                 // ----------------------------------------------------------
                 // Called by ng-init with values from node config
                 // ----------------------------------------------------------
-                $scope.init = function (qth, currentAz, targetAz, colors, latLineWidth, defaultZoom, beamWidth, showLogo, gridMin, showGrayline, dxGrid) {
+                $scope.init = function (qth, currentAz, targetAz, colors, latLineWidth, defaultZoom, beamWidth, showLogo, gridMin, showGrayline, dxGrid, allowedAzimuths) {
                     $scope.qth            = qth || 'JJ00';
                     $scope.currentAzimuth = parseFloat(currentAz) || 0;
                     $scope.targetAzimuth  = parseFloat(targetAz)  || 0;
                     if (dxGrid != null) { $scope.dxGrid = String(dxGrid).toUpperCase(); }
+                    if (allowedAzimuths != null) {
+                        $scope.allowedAzimuths = String(allowedAzimuths).split(',')
+                            .map(function (s) { return parseFloat(s); })
+                            .filter(function (n) { return isFinite(n); })
+                            .map(function (n) { return ((n % 360) + 360) % 360; })
+                            .sort(function (a, b) { return a - b; });
+                        // snap the initial/default target onto the list
+                        $scope.targetAzimuth = snapAzimuth($scope.targetAzimuth);
+                    }
                     if (colors && typeof colors === 'object') { $scope.colors = colors; }
                     if (latLineWidth) { $scope.latLineWidth = parseFloat(latLineWidth); }
                     if (defaultZoom)  {
@@ -806,6 +831,21 @@ module.exports = function (RED) {
                             .attr('stroke-width', isMajor ? 1.5 : 0.8);
                     }
 
+                    // ------ Allowed-azimuth markers (3× thicker, on the border) ------
+                    $scope.allowedAzimuths.forEach(function (deg) {
+                        var rad = deg * Math.PI / 180;
+                        var bd  = borderDist(rad);
+                        var innerR = bd - 12;
+                        svg.append('line')
+                            .attr('x1', qx + innerR * Math.sin(rad))
+                            .attr('y1', qy - innerR * Math.cos(rad))
+                            .attr('x2', qx + bd * Math.sin(rad))
+                            .attr('y2', qy - bd * Math.cos(rad))
+                            .attr('stroke', '#333')
+                            .attr('stroke-width', 4.5)
+                            .attr('stroke-linecap', 'round');
+                    });
+
                     // ------ Cardinal compass labels (just outside the border) ------
                     var cardinals = [['N', 0], ['E', 90], ['S', 180], ['W', 270]];
                     cardinals.forEach(function (c) {
@@ -1043,7 +1083,7 @@ module.exports = function (RED) {
                         changed = true;
                     }
                     if (msg.targetAzimuth !== undefined) {
-                        var newTarget = parseFloat(msg.targetAzimuth);
+                        var newTarget = snapAzimuth(parseFloat(msg.targetAzimuth));
                         if (newTarget !== $scope.targetAzimuth) { targetChanged = true; }
                         $scope.targetAzimuth = newTarget;
                         $scope.alignedSince = null;

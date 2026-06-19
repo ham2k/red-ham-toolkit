@@ -154,6 +154,15 @@
             <label for="node-input-showGrayline" style="width:auto;"><i class="fa fa-moon-o"></i> Show grayline</label>
             <input type="checkbox" id="node-input-showGrayline" style="display:inline-block;width:auto;vertical-align:top;margin-left:6px;">
         </div>
+        <div class="form-row" style="margin-bottom:2px;">
+            <label for="node-input-allowedAzimuths" style="width:auto;"><i class="fa fa-thumb-tack"></i> Allowed azimuths</label>
+            <input type="text" id="node-input-allowedAzimuths" placeholder="e.g. 0, 45, 90, 135, 180, 225, 270, 315"
+                   style="width:24em;margin-left:6px;">
+        </div>
+        <div class="rotator-field-hint" style="margin-left:0;margin-bottom:8px;font-size:11px;color:#999;">
+            Comma-separated degrees. Clicks and target messages snap to the nearest value;
+            these angles get a thicker marker on the border. Leave empty to allow any azimuth.
+        </div>
     </div>
 </script>
 
@@ -248,7 +257,8 @@
             defaultZoom:          { value: 1.0 },
             beamWidth:            { value: 30 },
             showLogo:             { value: true },
-            showGrayline:         { value: true }
+            showGrayline:         { value: true },
+            allowedAzimuths:      { value: '' }
         },
         inputs:  1,
         outputs: 1,
