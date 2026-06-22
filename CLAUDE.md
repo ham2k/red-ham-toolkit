@@ -10,6 +10,7 @@ The package is designed to host **multiple** nodes. Each node lives in its own f
 | Node type | Folder | Description |
 |-----------|--------|-------------|
 | `h2k-rotator-widget-1` | [`nodes/h2k-rotator-widget-1/`](nodes/h2k-rotator-widget-1/README.md) | Antenna rotator widget: azimuthal-equidistant world map with current/target azimuth indicators |
+| `h2k-pstrotator` | [`nodes/h2k-pstrotator/`](nodes/h2k-pstrotator/README.md) | PstRotator UDP bridge: send commands and receive position reports via UDP |
 
 See each node's `README.md` for its parameters, inputs/outputs, behaviour, and node-specific
 notes.

@@ -14,7 +14,8 @@
   "license": "MIT",
   "node-red": {
     "nodes": {
-      "h2k-rotator-widget-1": "nodes/h2k-rotator-widget-1/h2k-rotator-widget-1.js"
+      "h2k-rotator-widget-1": "nodes/h2k-rotator-widget-1/h2k-rotator-widget-1.js",
+      "h2k-pstrotator": "nodes/h2k-pstrotator/h2k-pstrotator.js"
     }
   },
   "peerDependencies": {
