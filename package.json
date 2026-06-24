@@ -14,9 +14,9 @@
   "license": "MIT",
   "node-red": {
     "nodes": {
-      "h2k-rotator-widget-1": "nodes/h2k-rotator-widget-1/h2k-rotator-widget-1.js",
-      "h2k-pstrotator": "nodes/h2k-pstrotator/h2k-pstrotator.js",
-      "h2k-parse-callsign": "nodes/h2k-parse-callsign/h2k-parse-callsign.js"
+      "ui_h2k_rotator": "nodes/ui_h2k_rotator/ui_h2k_rotator.js",
+      "h2k_pstrotator": "nodes/h2k_pstrotator/h2k_pstrotator.js",
+      "h2k_parse_callsign": "nodes/h2k_parse_callsign/h2k_parse_callsign.js"
     }
   },
   "dependencies": {

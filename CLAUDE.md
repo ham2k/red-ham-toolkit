@@ -9,9 +9,9 @@ The package is designed to host **multiple** nodes. Each node lives in its own f
 
 | Node type | Folder | Description |
 |-----------|--------|-------------|
-| `h2k-rotator-widget-1` | [`nodes/h2k-rotator-widget-1/`](nodes/h2k-rotator-widget-1/README.md) | Antenna rotator widget: azimuthal-equidistant world map with current/target azimuth indicators |
-| `h2k-pstrotator` | [`nodes/h2k-pstrotator/`](nodes/h2k-pstrotator/README.md) | PstRotator UDP bridge: send commands and receive position reports via UDP |
-| `h2k-parse-callsign` | [`nodes/h2k-parse-callsign/`](nodes/h2k-parse-callsign/README.md) | Parse a ham radio callsign into its component parts (prefix, digit, indicators, etc.) |
+| `ui_h2k_rotator` | [`nodes/ui_h2k_rotator/`](nodes/ui_h2k_rotator/README.md) | Antenna rotator widget: azimuthal-equidistant world map with current/target azimuth indicators |
+| `h2k_pstrotator` | [`nodes/h2k_pstrotator/`](nodes/h2k_pstrotator/README.md) | PstRotator UDP bridge: send commands and receive position reports via UDP |
+| `h2k_parse_callsign` | [`nodes/h2k_parse_callsign/`](nodes/h2k_parse_callsign/README.md) | Parse a ham radio callsign into its component parts (prefix, digit, indicators, etc.) |
 
 See each node's `README.md` for its parameters, inputs/outputs, behaviour, and node-specific
 notes.
@@ -24,9 +24,9 @@ assets/                            shared static assets (e.g. ham2k-square.svg)
 dev-tools/                         local development helpers
   restart-node-red.sh              stop + relaunch Node-RED
 nodes/
-  h2k-rotator-widget-1/
-    h2k-rotator-widget-1.js                 server-side node + serialised browser controller
-    h2k-rotator-widget-1.html              editor config panel + help
+  ui_h2k_rotator/
+    ui_h2k_rotator.js                      server-side node + serialised browser controller
+    ui_h2k_rotator.html                    editor config panel + help
     README.md                      node documentation
     data/                          per-node local data overrides (optional)
 ```
