@@ -22,7 +22,8 @@
   },
   "dependencies": {
     "@ham2k/lib-callsigns": "^1.0.2",
-    "@ham2k/lib-country-files": "^1.0.202605301"
+    "@ham2k/lib-country-files": "^1.0.202605301",
+    "@ham2k/lib-cqmag-data": "^1.1.0"
   },
   "peerDependencies": {
     "node-red-dashboard": "^2.0.0 || ^3.0.0"
