@@ -237,13 +237,165 @@
 </script>
 
 <!-- ============================================================
+     Ham2K logo background decorator
+     Injects a faded, clipped logo behind each Ham2K node block.
+     Runs once (guarded), covers all Ham2K node types.
+     ============================================================ -->
+<script type="text/javascript">
+(function () {
+    if (window._h2kNodeDecorator) return;
+    window._h2kNodeDecorator = true;
+
+    var LOGO_URL = '/h2k-rotator-widget-1/ham2k-square.svg';
+    var LOGO_OPACITY = 0.17;
+
+    // Which side the icon is on for each node type
+    var NODE_ICON_SIDE = {
+        'h2k-rotator-widget-1': 'right',
+        'h2k-pstrotator':       'left'
+    };
+
+    // ── Canvas nodes (SVG) ───────────────────────────────────────────────────
+
+    function decorateNode(el, side) {
+        if (el.querySelector('.h2k-bg-logo')) return;
+        // Node-RED 5.x: background rect has class "red-ui-flow-node"
+        var bgRect = el.querySelector('rect.red-ui-flow-node');
+        if (!bgRect) return;
+
+        var w  = parseFloat(bgRect.getAttribute('width'))  || 100;
+        var h  = parseFloat(bgRect.getAttribute('height')) || 30;
+        var rx = parseFloat(bgRect.getAttribute('rx'))     || 5;
+
+        // Icon is always 30px wide; detect side from icon group class
+        var ICON_W = 30;
+        var iconGroupRight = !!el.querySelector('.red-ui-flow-node-icon-group-right');
+        var iconEdge = iconGroupRight ? (w - ICON_W) : ICON_W;
+
+        // Logo sits next to the icon, slightly taller than the node (subtle rounded crop)
+        var logoH = h * 1.4;
+        var logoX = (side === 'right') ? iconEdge - logoH : iconEdge;
+        var logoY = (h - logoH) / 2;
+
+        // CSS inset() clip avoids SVG url(#id) issues caused by Node-RED's base URL
+        var clipTop    = Math.max(0, -logoY);
+        var clipBottom = Math.max(0, logoY + logoH - h);
+        var clipLeft   = Math.max(0, -logoX);
+        var clipRight  = Math.max(0, logoX + logoH - w);
+
+        var img = document.createElementNS('http://www.w3.org/2000/svg', 'image');
+        img.classList.add('h2k-bg-logo');
+        img.setAttribute('href', LOGO_URL);
+        img.setAttributeNS('http://www.w3.org/1999/xlink', 'href', LOGO_URL);
+        img.setAttribute('x', String(logoX));
+        img.setAttribute('y', String(logoY));
+        img.setAttribute('width', String(logoH));
+        img.setAttribute('height', String(logoH));
+        img.setAttribute('opacity', String(LOGO_OPACITY));
+        img.setAttribute('pointer-events', 'none');
+        img.style.clipPath = 'inset(' + clipTop + 'px ' + clipRight + 'px ' +
+                              clipBottom + 'px ' + clipLeft + 'px round ' + rx + 'px)';
+        el.insertBefore(img, bgRect.nextSibling);
+    }
+
+    function tryDecorate(el) {
+        if (!el || el.nodeType !== 1) return;
+        if (!el.classList || !el.classList.contains('red-ui-flow-node')) return;
+        if (!el.id) return;
+        var node = RED.nodes.node(el.id);
+        if (!node) return;
+        var side = NODE_ICON_SIDE[node.type];
+        if (side === undefined) return;
+        decorateNode(el, side);
+    }
+
+    function decorateAll() {
+        if (typeof RED === 'undefined') return;
+        var chart = document.getElementById('red-ui-workspace-chart');
+        if (chart) chart.querySelectorAll('g.red-ui-flow-node').forEach(tryDecorate);
+        decorateAllPalette();
+    }
+
+    // ── Palette nodes (HTML divs) ────────────────────────────────────────────
+
+    function decoratePaletteNode(el) {
+        if (el.querySelector('.h2k-palette-logo')) return;
+        var type = el.getAttribute('data-palette-type');
+        var side = NODE_ICON_SIDE[type];
+        if (side === undefined) return;
+
+        var iconContainer = el.querySelector('.red-ui-palette-icon-container');
+        if (!iconContainer) return;
+
+        var nodeH  = el.offsetHeight;
+        var nodeW  = el.offsetWidth;
+        var iconLeft = iconContainer.offsetLeft;
+        var iconW    = iconContainer.offsetWidth;
+        var rx = parseFloat(getComputedStyle(el).borderRadius) || 3;
+
+        var LOGO_SIZE = Math.round(Math.min(nodeH, 30) * 1.4);
+        var logoLeft = (side === 'right') ? iconLeft - LOGO_SIZE : iconLeft + iconW;
+        var logoTop  = (nodeH - LOGO_SIZE) / 2;
+
+        var clipTop    = Math.max(0, -logoTop);
+        var clipBottom = Math.max(0, logoTop + LOGO_SIZE - nodeH);
+        var clipLeft   = Math.max(0, -logoLeft);
+        var clipRight  = Math.max(0, logoLeft + LOGO_SIZE - nodeW);
+
+        var img = document.createElement('img');
+        img.className = 'h2k-palette-logo';
+        img.src = LOGO_URL;
+        img.style.cssText = 'position:absolute;pointer-events:none;' +
+            'left:' + logoLeft + 'px;top:' + logoTop + 'px;' +
+            'width:' + LOGO_SIZE + 'px;height:' + LOGO_SIZE + 'px;' +
+            'opacity:' + LOGO_OPACITY + ';' +
+            'clip-path:inset(' + clipTop + 'px ' + clipRight + 'px ' +
+                                 clipBottom + 'px ' + clipLeft + 'px round ' + rx + 'px);';
+        el.appendChild(img);
+    }
+
+    function decorateAllPalette() {
+        var palette = document.getElementById('red-ui-palette');
+        if (!palette) return;
+        palette.querySelectorAll('[data-palette-type]').forEach(function(el) {
+            var type = el.getAttribute('data-palette-type');
+            if (NODE_ICON_SIDE[type] !== undefined) decoratePaletteNode(el);
+        });
+    }
+
+    // ── Init ─────────────────────────────────────────────────────────────────
+
+    // Poll to catch new and redrawn nodes
+    setInterval(decorateAll, 800);
+
+    // MutationObserver for immediate response when nodes are added to the canvas
+    var observer = new MutationObserver(function (muts) {
+        if (typeof RED === 'undefined') return;
+        muts.forEach(function (mut) {
+            mut.addedNodes.forEach(function (n) {
+                if (n.nodeType === 1) tryDecorate(n);
+            });
+        });
+    });
+
+    function init() {
+        var chart = document.getElementById('red-ui-workspace-chart');
+        if (chart) { observer.observe(chart, { childList: true, subtree: true }); }
+        decorateAll();
+    }
+
+    setTimeout(init, 100);
+}());
+</script>
+
+<!-- ============================================================
      Node registration (runs in the Node-RED editor)
      ============================================================ -->
 <script type="text/javascript">
     RED.nodes.registerType('h2k-rotator-widget-1', {
-        category: 'dashboard',
+        category: 'ham radio widgets',
         color: '#E2D96E',
-        paletteLabel: 'H2K Rotator',
+        paletteLabel: 'Rotator Widget',
         defaults: {
             group: { type: 'ui_group', required: true },
             size: { value: '' },
@@ -283,6 +435,7 @@
         inputs: 1,
         outputs: 1,
         icon: 'font-awesome/fa-compass',
+        align: 'right',
         label: function () { return this.label || 'H2K Rotator'; },
 
         oneditprepare: function () {
