@@ -15,8 +15,12 @@
   "node-red": {
     "nodes": {
       "h2k-rotator-widget-1": "nodes/h2k-rotator-widget-1/h2k-rotator-widget-1.js",
-      "h2k-pstrotator": "nodes/h2k-pstrotator/h2k-pstrotator.js"
+      "h2k-pstrotator": "nodes/h2k-pstrotator/h2k-pstrotator.js",
+      "h2k-parse-callsign": "nodes/h2k-parse-callsign/h2k-parse-callsign.js"
     }
+  },
+  "dependencies": {
+    "@ham2k/lib-callsigns": "^1.0.2"
   },
   "peerDependencies": {
     "node-red-dashboard": "^2.0.0 || ^3.0.0"
