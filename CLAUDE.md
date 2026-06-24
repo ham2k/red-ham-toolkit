@@ -12,6 +12,7 @@ The package is designed to host **multiple** nodes. Each node lives in its own f
 | `ui_h2k_rotator` | [`nodes/ui_h2k_rotator/`](nodes/ui_h2k_rotator/README.md) | Antenna rotator widget: azimuthal-equidistant world map with current/target azimuth indicators |
 | `h2k_pstrotator` | [`nodes/h2k_pstrotator/`](nodes/h2k_pstrotator/README.md) | PstRotator UDP bridge: send commands and receive position reports via UDP |
 | `h2k_parse_callsign` | [`nodes/h2k_parse_callsign/`](nodes/h2k_parse_callsign/README.md) | Parse a ham radio callsign into its component parts (prefix, digit, indicators, etc.) |
+| `h2k_annotate_callsign` | [`nodes/h2k_annotate_callsign/`](nodes/h2k_annotate_callsign/README.md) | Annotate a callsign with DXCC entity data (country, CQ zone, ITU zone, continent); auto-parses if needed |
 
 See each node's `README.md` for its parameters, inputs/outputs, behaviour, and node-specific
 notes.
