@@ -1,0 +1,151 @@
+<!-- ============================================================
+     Node editor config panel
+     ============================================================ -->
+<script type="text/x-red" data-template-name="h2k_wsjtx_listener">
+    <div class="form-row">
+        <label for="node-input-name"><i class="fa fa-tag"></i> Name</label>
+        <input type="text" id="node-input-name" placeholder="WSJT-X">
+    </div>
+    <hr/>
+    <div class="form-row">
+        <label for="node-input-host"><i class="fa fa-server"></i> Host</label>
+        <input type="text" id="node-input-host" placeholder="127.0.0.1" style="width:12em;">
+        <span style="margin-left:8px;font-size:11px;color:#888;">WSJT-X host (for outgoing commands)</span>
+    </div>
+    <div class="form-row">
+        <label for="node-input-port"><i class="fa fa-plug"></i> UDP Port</label>
+        <input type="number" id="node-input-port" min="1" max="65535" placeholder="2237" style="width:7em;">
+        <span style="margin-left:8px;font-size:11px;color:#888;">WSJT-X → Settings → Reporting → UDP Server port</span>
+    </div>
+    <div class="form-row">
+        <label for="node-input-wsjtxId"><i class="fa fa-id-card"></i> WSJT-X ID</label>
+        <input type="text" id="node-input-wsjtxId" placeholder="WSJT-X" style="width:12em;">
+        <span style="margin-left:8px;font-size:11px;color:#888;">Instance ID for outgoing commands</span>
+    </div>
+    <hr/>
+    <div class="form-row" style="margin-top:12px;display:flex;align-items:center;gap:10px;">
+        <img src="ui_h2k_rotator/ham2k-square.svg" alt="Ham2K" style="width:36px;height:36px;flex:none;">
+        <div style="font-size:13px;color:#666;line-height:1.6;">
+            <div>Part of Ham2K's free and open source <a href="https://github.com/ham2k/red-ham-toolkit" target="_blank" rel="noopener"><b>Ham RED Toolkit</b></a> by Sebastián Delmont KI2D</div>
+            <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-top:2px;">
+                <a href="https://github.com/ham2k/red-ham-toolkit" target="_blank" rel="noopener" style="background-color:#f0f0f0;padding:4px 8px;border-radius:6px;color:black;text-decoration:none;white-space:nowrap;">
+                    <svg height="14" width="14" viewBox="0 0 16 16" fill="black" style="vertical-align:middle;position:relative;top:-1px;"><path d="M8 0c4.42 0 8 3.58 8 8a8.013 8.013 0 0 1-5.45 7.59c-.4.08-.55-.17-.55-.38 0-.27.01-1.13.01-2.2 0-.75-.25-1.23-.54-1.48 1.78-.2 3.65-.88 3.65-3.95 0-.88-.31-1.59-.82-2.15.08-.2.36-1.02-.08-2.12 0 0-.67-.22-2.2.82-.64-.18-1.32-.27-2-.27-.68 0-1.36.09-2 .27-1.53-1.03-2.2-.82-2.2-.82-.44 1.1-.16 1.92-.08 2.12-.51.56-.82 1.28-.82 2.15 0 3.06 1.86 3.75 3.64 3.95-.23.2-.44.55-.51 1.07-.46.21-1.61.55-2.33-.66-.15-.24-.6-.83-1.23-.82-.67.01-.27.38.01.53.34.19.73.9.82 1.13.16.45.68 1.31 2.69.94 0 .67.01 1.3.01 1.49 0 .21-.15.45-.55.38A7.995 7.995 0 0 1 0 8c0-4.42 3.58-8 8-8Z"/></svg>
+                    View on GitHub
+                </a>
+                <span>Support this work:</span>
+                <a href="https://buymeacoffee.com/ham2k" target="_blank" rel="noopener">
+                    <img src="https://cdn.buymeacoffee.com/buttons/v2/default-yellow.png" alt="Buy Me a Coffee" style="height:28px;width:auto;vertical-align:middle;">
+                </a>
+            </div>
+        </div>
+    </div>
+</script>
+
+<!-- ============================================================
+     Help text
+     ============================================================ -->
+<script type="text/x-red" data-help-name="h2k_wsjtx_listener">
+    <p>Listens for UDP messages broadcast by <a href="https://wsjt.sourceforge.io/wsjtx.html" target="_blank">WSJT-X</a>
+       and can send commands back to it. In WSJT-X go to
+       <em>File → Settings → Reporting</em> and set <em>UDP Server</em> to this machine's
+       address and port.</p>
+
+    <h3>Outputs</h3>
+    <p>Each received WSJT-X datagram produces one message. The <code>msg.topic</code>
+       identifies the type; <code>msg.payload</code> contains the parsed fields.</p>
+
+    <dl class="message-properties">
+        <dt>topic: <code>"heartbeat"</code></dt>
+        <dd>Periodic keep-alive. Payload: <code>id</code>, <code>maxSchemaNumber</code>,
+            <code>version</code>, <code>revision</code>.</dd>
+
+        <dt>topic: <code>"status"</code></dt>
+        <dd>Current WSJT-X state. Payload: <code>id</code>, <code>dialFrequency</code> (Hz),
+            <code>mode</code>, <code>deCall</code>, <code>deGrid</code>, <code>dxCall</code>,
+            <code>dxGrid</code>, <code>txEnabled</code>, <code>transmitting</code>,
+            <code>decoding</code>, <code>rxDF</code>, <code>txDF</code>, <code>txWatchdog</code>,
+            <code>subMode</code>, <code>fastMode</code>, <code>specialMode</code>,
+            <code>configName</code>, <code>txMessage</code>.</dd>
+
+        <dt>topic: <code>"decode"</code></dt>
+        <dd>New FT8/FT4/JT65/… decode. Payload: <code>id</code>, <code>new</code>,
+            <code>time</code> ("HH:MM:SS" UTC), <code>snr</code>, <code>deltaTime</code> (s),
+            <code>deltaFreq</code> (Hz), <code>mode</code>, <code>message</code>
+            (e.g. <code>"CQ KI2D FN20"</code>), <code>lowConfidence</code>, <code>offAir</code>.</dd>
+
+        <dt>topic: <code>"clear"</code></dt>
+        <dd>WSJT-X cleared its decode list. Payload: <code>id</code>, <code>window</code>.</dd>
+
+        <dt>topic: <code>"qso_logged"</code></dt>
+        <dd>A QSO was logged. Payload: <code>id</code>, <code>timeOn</code>,
+            <code>timeOff</code> (ISO 8601), <code>dxCall</code>, <code>dxGrid</code>,
+            <code>txFrequency</code>, <code>mode</code>, <code>reportSent</code>,
+            <code>reportReceived</code>, <code>txPower</code>, <code>comments</code>,
+            <code>name</code>, <code>myCall</code>, <code>myGrid</code>,
+            <code>operatorCall</code>, <code>exchangeSent</code>, <code>exchangeReceived</code>,
+            <code>adifPropMode</code>.</dd>
+
+        <dt>topic: <code>"close"</code></dt>
+        <dd>WSJT-X is shutting down. Payload: <code>id</code>.</dd>
+
+        <dt>topic: <code>"wspr_decode"</code></dt>
+        <dd>WSPR spot. Payload: <code>id</code>, <code>new</code>, <code>time</code>,
+            <code>snr</code>, <code>deltaTime</code>, <code>frequency</code> (Hz),
+            <code>drift</code>, <code>callsign</code>, <code>grid</code>,
+            <code>power</code> (dBm), <code>offAir</code>.</dd>
+
+        <dt>topic: <code>"logged_adif"</code></dt>
+        <dd>Raw ADIF string for a logged QSO. Payload: <code>id</code>, <code>adif</code>.</dd>
+    </dl>
+
+    <h3>Inputs</h3>
+    <dl class="message-properties">
+        <dt>topic: <code>"halt_tx"</code></dt>
+        <dd>Stop transmitting. Optional payload: <code>{ autoOnly: true }</code> to only
+            stop when the watchdog triggered.</dd>
+
+        <dt>topic: <code>"reply"</code></dt>
+        <dd>Reply to a specific decode. Payload should be a <code>decode</code> payload
+            object (or a compatible object with <code>time</code>, <code>snr</code>,
+            <code>deltaTime</code>, <code>deltaFreq</code>, <code>mode</code>,
+            <code>message</code>, <code>lowConfidence</code>).</dd>
+
+        <dt>topic: <code>"free_text"</code></dt>
+        <dd>Set the free-text message. Payload: <code>{ text: "73 DE KI2D", send: false }</code>.
+            Set <code>send: true</code> to also start transmitting it immediately.</dd>
+
+        <dt>topic: <code>"highlight_callsign"</code></dt>
+        <dd>Highlight a callsign in WSJT-X's decode list. Payload:
+            <code>{ callsign: "KI2D", backgroundColor: "#ffff00", foregroundColor: "#000000" }</code>.
+            Omit colors to use WSJT-X defaults. Set <code>reset: true</code> to clear highlights.</dd>
+    </dl>
+
+    <h3>Node status</h3>
+    <ul>
+        <li><b>Grey ring</b> — initializing</li>
+        <li><b>Yellow ring</b> — socket bound, waiting for first message</li>
+        <li><b>Green dot</b> — receiving; shows last message type and WSJT-X instance ID</li>
+        <li><b>Red ring</b> — socket error</li>
+    </ul>
+</script>
+
+<!-- ============================================================
+     Node registration
+     ============================================================ -->
+<script type="text/javascript">
+    RED.nodes.registerType('h2k_wsjtx_listener', {
+        category: 'ham radio',
+        color: '#C5D5A0',
+        paletteLabel: 'WSJT-X',
+        defaults: {
+            name:    { value: '' },
+            host:    { value: '127.0.0.1' },
+            port:    { value: 2237, validate: RED.validators.number() },
+            wsjtxId: { value: 'WSJT-X' }
+        },
+        inputs:  1,
+        outputs: 1,
+        icon: 'font-awesome/fa-headphones',
+        label: function () { return this.name || 'WSJT-X'; }
+    });
+</script>

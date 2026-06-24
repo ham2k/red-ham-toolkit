@@ -17,7 +17,8 @@
       "ui_h2k_rotator": "nodes/ui_h2k_rotator/ui_h2k_rotator.js",
       "h2k_pstrotator": "nodes/h2k_pstrotator/h2k_pstrotator.js",
       "h2k_parse_callsign": "nodes/h2k_parse_callsign/h2k_parse_callsign.js",
-      "h2k_annotate_callsign": "nodes/h2k_annotate_callsign/h2k_annotate_callsign.js"
+      "h2k_annotate_callsign": "nodes/h2k_annotate_callsign/h2k_annotate_callsign.js",
+      "h2k_wsjtx_listener": "nodes/h2k_wsjtx_listener/h2k_wsjtx_listener.js"
     }
   },
   "dependencies": {
