@@ -2,12 +2,13 @@ var path = require('path');
 var os = require('os');
 
 function loadDashboard(RED) {
-    // Works when properly installed alongside node-red-dashboard
-    try { return require('node-red-dashboard'); } catch (e) { }
-    // Works when npm-linked for development: resolve from the Node-RED user dir
+    // Prefer the Node-RED user dir install — this ensures we share the same
+    // module instance as the dashboard's own nodes (same socket.io, same menu).
     var userDir = (RED.settings && RED.settings.userDir) ||
         path.join(os.homedir(), '.node-red');
     try { return require(path.join(userDir, 'node_modules', 'node-red-dashboard')); } catch (e) { }
+    // Fall back to a co-installed copy (production install alongside node-red-dashboard)
+    try { return require('node-red-dashboard'); } catch (e) { }
     return null;
 }
 
