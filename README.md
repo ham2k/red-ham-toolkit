@@ -1,35 +1,23 @@
-# Ham2K RED Toolkit
+# Ham2K's RED Ham Toolkit
 
-`@ham2k/red-ham-toolkit` — a collection of free and open-source Ham Radio tools
-(nodes & widgets) for [Node-RED](https://nodered.org/), by
-Sebastián Delmont KI2D.
+`@ham2k/red-ham-toolkit` — a collection of free and open-source Ham Radio nodes and widgets
+for [Node-RED](https://nodered.org/), by Sebastián Delmont KI2D. 
+
+Visit https://github.com/ham2k/red-ham-toolkit for more details.
 
 <p align="center">
   <img src="assets/h2k-rotator-widget-1-screenshot.png" alt="H2K Rotator widget" width="420">
 </p>
 
-## H2K Rotator Widget (for Dashboard 1.0)
+## Nodes
 
-An antenna-rotator widget that shows an azimuthal-equidistant world map centred on your
-QTH, with live **current** and **target** azimuth indicators. Click the map to set a
-heading, drive it from your rig/rotator over `msg`/topics, and read it back on the output.
-
-Highlights:
-
-- Azimuthal-equidistant map centred on your Maidenhead grid — bearings are true straight
-  lines from the centre.
-- Current/target azimuth arrows, a beam-width wedge, and a compact numeric HUD.
-- Optional day/night **grayline**, lat/long graticule, and a **DX grid** marker.
-- Pan (grab the centre) and zoom; fully themeable colours and opacities.
-- Optional **allowed azimuths** that snap targets to fixed rotator stops.
-
-See [`nodes/h2k-rotator-widget-1/README.md`](nodes/h2k-rotator-widget-1/README.md) for full parameters,
-inputs/outputs, and setup.
-
-## More coming soon
-
-The toolkit is built to host **multiple** nodes — more ham-radio components for Node-RED
-are on the way. ⭐ the repo to follow along.
+| Node | Description |
+|------|-------------|
+| [**ui_h2k_rotator**](nodes/ui_h2k_rotator/README.md) | Dashboard widget: azimuthal-equidistant world map with live current/target azimuth indicators. Click to set heading, drive from rig/rotator via messages. |
+| [**h2k_pstrotator**](nodes/h2k_pstrotator/README.md) | PstRotator UDP bridge: poll azimuth/elevation, send rotate/stop/park/track commands. |
+| [**h2k_parse_callsign**](nodes/h2k_parse_callsign/README.md) | Parse a ham radio callsign into its component parts (base call, prefix, district digit, indicator). |
+| [**h2k_annotate_callsign**](nodes/h2k_annotate_callsign/README.md) | Annotate a callsign with DXCC entity data (country, CQ zone, ITU zone, continent); auto-parses if needed. |
+| [**h2k_wsjtx_listener**](nodes/h2k_wsjtx_listener/README.md) | WSJT-X UDP bridge: receive decoded spots, status and QSO events; send halt/reply/free-text commands. Supports unicast and multicast (e.g. `239.239.0.2`). |
 
 ## Contributing
 
@@ -37,7 +25,7 @@ See [CONTRIBUTING.md](CONTRIBUTING.md) for local development setup and the reloa
 
 ## Support
 
-If you find this useful, you can support our efforts at:
+If you find this useful, please consider supporting our work:
 
 <a href="https://buymeacoffee.com/ham2k" target="_blank">
   <img src="https://cdn.buymeacoffee.com/buttons/v2/default-yellow.png" alt="Buy Me A Coffee" height="48">

@@ -10,7 +10,9 @@
     <div class="form-row">
         <label for="node-input-host"><i class="fa fa-server"></i> Host</label>
         <input type="text" id="node-input-host" placeholder="127.0.0.1" style="width:12em;">
-        <span style="margin-left:8px;font-size:11px;color:#888;">WSJT-X host (for outgoing commands)</span>
+        <span style="margin-left:8px;font-size:11px;color:#888;">Must match WSJT-X → Settings → Reporting → UDP Server address.<br>
+        Use a multicast group (e.g. <b>239.239.0.2</b>) so multiple apps can listen simultaneously.<br>
+        Unicast (e.g. <b>127.0.0.1</b> or this machine's IP) only delivers to one listener.</span>
     </div>
     <div class="form-row">
         <label for="node-input-port"><i class="fa fa-plug"></i> UDP Port</label>
@@ -21,6 +23,21 @@
         <label for="node-input-wsjtxId"><i class="fa fa-id-card"></i> WSJT-X ID</label>
         <input type="text" id="node-input-wsjtxId" placeholder="WSJT-X" style="width:12em;">
         <span style="margin-left:8px;font-size:11px;color:#888;">Instance ID for outgoing commands</span>
+    </div>
+    <hr/>
+    <div class="form-row">
+        <label><i class="fa fa-filter"></i> Emit topics</label>
+        <div style="display:inline-grid;grid-template-columns:repeat(2,15em);row-gap:4px;">
+            <label style="font-weight:normal;white-space:nowrap;"><input type="checkbox" id="node-input-emitDecode"     style="width:auto;margin-right:6px;"> Decode</label>
+            <label style="font-weight:normal;white-space:nowrap;"><input type="checkbox" id="node-input-emitStatus"     style="width:auto;margin-right:6px;"> Status</label>
+            <label style="font-weight:normal;white-space:nowrap;"><input type="checkbox" id="node-input-emitQsoLogged"  style="width:auto;margin-right:6px;"> QSO Logged</label>
+            <label style="font-weight:normal;white-space:nowrap;"><input type="checkbox" id="node-input-emitLoggedAdif" style="width:auto;margin-right:6px;"> Logged ADIF</label>
+            <label style="font-weight:normal;white-space:nowrap;"><input type="checkbox" id="node-input-emitWsprDecode" style="width:auto;margin-right:6px;"> WSPR Decode</label>
+            <label style="font-weight:normal;white-space:nowrap;"><input type="checkbox" id="node-input-emitHeartbeat"  style="width:auto;margin-right:6px;"> Heartbeat</label>
+            <label style="font-weight:normal;white-space:nowrap;"><input type="checkbox" id="node-input-emitClear"       style="width:auto;margin-right:6px;"> Clear</label>
+            <label style="font-weight:normal;white-space:nowrap;"><input type="checkbox" id="node-input-emitClose"       style="width:auto;margin-right:6px;"> Close</label>
+            <label style="font-weight:normal;white-space:nowrap;"><input type="checkbox" id="node-input-emitTargetCall"  style="width:auto;margin-right:6px;"> Target Call</label>
+        </div>
     </div>
     <hr/>
     <div class="form-row" style="margin-top:12px;display:flex;align-items:center;gap:10px;">
@@ -138,10 +155,19 @@
         color: '#C5D5A0',
         paletteLabel: 'WSJT-X',
         defaults: {
-            name:    { value: '' },
-            host:    { value: '127.0.0.1' },
-            port:    { value: 2237, validate: RED.validators.number() },
-            wsjtxId: { value: 'WSJT-X' }
+            name:          { value: '' },
+            host:          { value: '127.0.0.1' },
+            port:          { value: 2237, validate: RED.validators.number() },
+            wsjtxId:       { value: 'WSJT-X' },
+            emitDecode:    { value: true },
+            emitStatus:    { value: true },
+            emitQsoLogged: { value: true },
+            emitLoggedAdif:{ value: true },
+            emitWsprDecode:{ value: true },
+            emitHeartbeat:  { value: true },
+            emitClear:      { value: true },
+            emitClose:      { value: true },
+            emitTargetCall: { value: true }
         },
         inputs:  1,
         outputs: 1,

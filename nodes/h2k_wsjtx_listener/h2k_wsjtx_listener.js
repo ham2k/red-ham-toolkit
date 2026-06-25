@@ -300,6 +300,9 @@ module.exports = function (RED) {
         var host    = (config.host    || '127.0.0.1').trim();
         var ownId   = (config.wsjtxId || 'WSJT-X').trim();
 
+        var firstOctet = parseInt(host.split('.')[0], 10);
+        var isMulticast = firstOctet >= 224 && firstOctet <= 239;
+
         var socket = dgram.createSocket({ type: 'udp4', reuseAddr: true });
 
         function sendBuf(buf) {
@@ -313,17 +316,84 @@ module.exports = function (RED) {
             node.status({ fill: 'red', shape: 'ring', text: err.message });
         });
 
+        var topicFilter = {
+            'decode':      config.emitDecode      !== false,
+            'status':      config.emitStatus      !== false,
+            'qso_logged':  config.emitQsoLogged   !== false,
+            'logged_adif': config.emitLoggedAdif  !== false,
+            'wspr_decode': config.emitWsprDecode  !== false,
+            'heartbeat':   config.emitHeartbeat   !== false,
+            'clear':       config.emitClear       !== false,
+            'close':       config.emitClose       !== false,
+            'targetCall':  config.emitTargetCall  !== false
+        };
+
+        // Grid cache: callsign → { grid, ts } for the last 5 minutes of decodes
+        var GRID_TTL = 5 * 60 * 1000;
+        var gridCache = {};
+        var lastDxCall = null;
+
+        function isGridToken(s) {
+            return /^[A-R]{2}[0-9]{2}([A-X]{2})?$/i.test(s);
+        }
+
+        function updateGridCache(message) {
+            // In FT8/FT4/JT65 the grid is always the last token when present,
+            // and the callsign is always the second-to-last token.
+            // e.g. "CQ KI2D FN20", "CQ DX KI2D FN20", "W1AW KI2D FN20"
+            var parts = (message || '').trim().split(/\s+/);
+            if (parts.length < 2) return;
+            var last = parts[parts.length - 1];
+            if (!isGridToken(last)) return;
+            var call = parts[parts.length - 2].toUpperCase();
+            gridCache[call] = { grid: last.toUpperCase(), ts: Date.now() };
+            // Prune stale entries
+            var cutoff = Date.now() - GRID_TTL;
+            Object.keys(gridCache).forEach(function (k) {
+                if (gridCache[k].ts < cutoff) delete gridCache[k];
+            });
+        }
+
+        function lookupGrid(call) {
+            var entry = call ? gridCache[call.toUpperCase()] : null;
+            if (!entry || Date.now() - entry.ts > GRID_TTL) return '';
+            return entry.grid;
+        }
+
         socket.on('message', function (buf) {
             var result = parse(buf);
             if (!result) return;
             node.status({ fill: 'green', shape: 'dot',
                 text: result.topic + (result.payload.id ? ' · ' + result.payload.id : '') });
+
+            if (result.topic === 'decode') {
+                updateGridCache(result.payload.message);
+            }
+
+            if (result.topic === 'status') {
+                var newDxCall = result.payload.dxCall || '';
+                if (newDxCall !== (lastDxCall || '') ) {
+                    lastDxCall = newDxCall || null;
+                    if (newDxCall && topicFilter['targetCall'] !== false) {
+                        node.send({
+                            topic: 'targetCall',
+                            payload: { dxCall: newDxCall, dxGrid: lookupGrid(newDxCall) }
+                        });
+                    }
+                }
+            }
+
+            if (topicFilter[result.topic] === false) return;
             node.send({ topic: result.topic, payload: result.payload });
         });
 
         node.status({ fill: 'grey', shape: 'ring', text: 'initializing' });
 
         socket.bind(port, function () {
+            socket.setBroadcast(true);
+            if (isMulticast) {
+                socket.addMembership(host);
+            }
             node.status({ fill: 'yellow', shape: 'ring', text: 'listening :' + port });
         });
 

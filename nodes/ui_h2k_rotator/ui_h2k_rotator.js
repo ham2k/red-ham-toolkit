@@ -206,7 +206,7 @@ module.exports = function (RED) {
             initController: function ($scope, events) {
 
                 // ----------------------------------------------------------
-                // Maidenhead grid locator → [lat, lon]
+                // Maidenhead grid locator → [lat, lon] (centre of square)
                 // ----------------------------------------------------------
                 function maidenheadToLatLon(grid) {
                     if (!grid || grid.length < 4) return [0, 0];
@@ -225,6 +225,20 @@ module.exports = function (RED) {
                         lat += 0.5;
                     }
                     return [lat, lon];
+                }
+
+                // Maidenhead grid locator → SW corner + dimensions of the grid square
+                function maidenheadToSquare(grid) {
+                    if (!grid || grid.length < 4) return null;
+                    var g = grid.toUpperCase();
+                    var lon0 = (g.charCodeAt(0) - 65) * 20 - 180 + parseInt(g[2]) * 2;
+                    var lat0 = (g.charCodeAt(1) - 65) * 10 - 90  + parseInt(g[3]);
+                    if (g.length >= 6) {
+                        lon0 += (g.charCodeAt(4) - 65) * 5 / 60;
+                        lat0 += (g.charCodeAt(5) - 65) * 2.5 / 60;
+                        return { lon0: lon0, lat0: lat0, dlon: 5 / 60, dlat: 2.5 / 60 };
+                    }
+                    return { lon0: lon0, lat0: lat0, dlon: 2, dlat: 1 };
                 }
 
                 // ----------------------------------------------------------
@@ -290,6 +304,7 @@ module.exports = function (RED) {
                 $scope.panX = 0.5;  // view pan intent, fraction of width  (clamped by maxPanOff in drawMap)
                 $scope.panY = 0.5;  // view pan intent, fraction of height (clamped by maxPanOff in drawMap)
                 $scope.alignedSince = Date.now() - 5001;  // treat initial state as already aligned if within 3°
+                $scope._targetExplicitlySet = false;  // false = target silently follows current until user/msg sets it
 
                 // ----------------------------------------------------------
                 // Smooth zoom – animate $scope.zoom toward $scope.targetZoom
@@ -387,11 +402,25 @@ module.exports = function (RED) {
                 document.addEventListener('mousemove', onMouseMove);
                 document.addEventListener('mouseup', onMouseUp);
 
+                $scope._dxGridTimer = null;
+                function setDxGrid(grid) {
+                    $scope.dxGrid = (grid == null) ? '' : String(grid).toUpperCase();
+                    if ($scope._dxGridTimer) { clearTimeout($scope._dxGridTimer); $scope._dxGridTimer = null; }
+                    if ($scope.dxGrid) {
+                        $scope._dxGridTimer = setTimeout(function () {
+                            $scope._dxGridTimer = null;
+                            $scope.dxGrid = '';
+                            $scope.drawMap();
+                        }, 5 * 60 * 1000);
+                    }
+                }
+
                 $scope.$on('$destroy', function () {
                     document.removeEventListener('mousemove', onMouseMove);
                     document.removeEventListener('mouseup', onMouseUp);
                     if (zoomAnimFrame) { cancelAnimationFrame(zoomAnimFrame); }
                     if ($scope._graylineTimer) { clearInterval($scope._graylineTimer); }
+                    if ($scope._dxGridTimer) { clearTimeout($scope._dxGridTimer); }
                     var el = document.getElementById('rotator-' + $scope.$id);
                     if (el) {
                         el.removeEventListener('mousedown', onSvgMouseDown);
@@ -453,6 +482,7 @@ module.exports = function (RED) {
                     var az = (Math.atan2(dx, -dy) * 180 / Math.PI + 360) % 360;
                     $scope.targetAzimuth = $scope.allowedAzimuths.length ? snapAzimuth(az) : Math.round(az);
                     $scope.alignedSince = null;
+                    $scope._targetExplicitlySet = true;
                     $scope.drawMap();
                     $scope.send({ payload: $scope.targetAzimuth, topic: 'targetAzimuth' });
                 }
@@ -515,8 +545,8 @@ module.exports = function (RED) {
                 $scope.init = function (qth, currentAz, targetAz, colors, latLineWidth, defaultZoom, beamWidth, showGrayline, dxGrid, allowedAzimuths, showAzimuthInMap) {
                     $scope.qth = qth || 'JJ00';
                     $scope.currentAzimuth = parseFloat(currentAz) || 0;
-                    $scope.targetAzimuth = parseFloat(targetAz) || 0;
-                    if (dxGrid != null) { $scope.dxGrid = String(dxGrid).toUpperCase(); }
+                    $scope.targetAzimuth = $scope.currentAzimuth;
+                    if (dxGrid != null) { setDxGrid(dxGrid); }
                     if (allowedAzimuths != null) {
                         $scope.allowedAzimuths = String(allowedAzimuths).split(',')
                             .map(function (s) { return parseFloat(s); })
@@ -882,24 +912,54 @@ module.exports = function (RED) {
                     });
 
                     // ------ DX grid marker ------
-                    // A coloured dot at the DX station's grid square, clipped to the globe.
+                    // When dxGrid is set, draw the grid square as a filled + outlined
+                    // polygon so the user can tap anywhere within it to aim the rotator
+                    // at that exact location (the generic selectTargetAt handler does the math).
                     if ($scope.dxGrid && $scope.dxGrid.length >= 4) {
+                        var dxOpacity = (C.dxDotOpacity != null ? C.dxDotOpacity : 100) / 100;
+                        var dxG = svg.append('g').attr('clip-path', 'url(#' + clipId + ')');
+
+                        var sq = maidenheadToSquare($scope.dxGrid);
+                        if (sq) {
+                            var squareGeoJson = {
+                                type: 'Feature',
+                                geometry: {
+                                    type: 'Polygon',
+                                    coordinates: [[
+                                        [sq.lon0,           sq.lat0],
+                                        [sq.lon0,           sq.lat0 + sq.dlat],
+                                        [sq.lon0 + sq.dlon, sq.lat0 + sq.dlat],
+                                        [sq.lon0 + sq.dlon, sq.lat0],
+                                        [sq.lon0,           sq.lat0]
+                                    ]]
+                                }
+                            };
+                            dxG.append('path')
+                                .datum(squareGeoJson)
+                                .attr('d', pathGen)
+                                .style('fill', C.dxDot)
+                                .style('fill-opacity', dxOpacity * 0.25)
+                                .style('stroke', C.dxDot)
+                                .style('stroke-width', '1.5px')
+                                .style('stroke-opacity', dxOpacity * 0.8)
+                                .style('pointer-events', 'none')
+                                .append('title')
+                                .text('DX: ' + $scope.dxGrid);
+                        }
+
+                        // Centre dot
                         var dxLatLon = maidenheadToLatLon($scope.dxGrid);
                         if (dxLatLon && isFinite(dxLatLon[0]) && isFinite(dxLatLon[1])) {
                             var dxXY = projection([dxLatLon[1], dxLatLon[0]]);
-                            // projection() returns null when the point is clipped (back of globe)
                             if (dxXY) {
-                                var dxG = svg.append('g').attr('clip-path', 'url(#' + clipId + ')');
                                 dxG.append('circle')
-                                    .attr('cx', dxXY[0]).attr('cy', dxXY[1]).attr('r', 5)
+                                    .attr('cx', dxXY[0]).attr('cy', dxXY[1]).attr('r', 4)
                                     .style('fill', C.dxDot)
-                                    .style('fill-opacity', (C.dxDotOpacity != null ? C.dxDotOpacity : 100) / 100)
+                                    .style('fill-opacity', dxOpacity)
                                     .style('stroke', '#000')
                                     .style('stroke-width', 1)
-                                    .style('stroke-opacity', (C.dxDotOpacity != null ? C.dxDotOpacity : 100) / 100)
-                                    .style('pointer-events', 'none')
-                                    .append('title')
-                                    .text('DX: ' + $scope.dxGrid);
+                                    .style('stroke-opacity', dxOpacity)
+                                    .style('pointer-events', 'none');
                             }
                         }
                     }
@@ -1096,6 +1156,9 @@ module.exports = function (RED) {
                     var targetChanged = false;
                     if (msg.currentAzimuth !== undefined) {
                         $scope.currentAzimuth = parseFloat(msg.currentAzimuth);
+                        if (!$scope._targetExplicitlySet) {
+                            $scope.targetAzimuth = $scope.currentAzimuth;
+                        }
                         changed = true;
                     }
                     if (msg.targetAzimuth !== undefined) {
@@ -1103,10 +1166,11 @@ module.exports = function (RED) {
                         if (newTarget !== $scope.targetAzimuth) { targetChanged = true; }
                         $scope.targetAzimuth = newTarget;
                         $scope.alignedSince = null;
+                        $scope._targetExplicitlySet = true;
                         changed = true;
                     }
                     if (msg.dxGrid !== undefined) {
-                        $scope.dxGrid = (msg.dxGrid == null) ? '' : String(msg.dxGrid).toUpperCase();
+                        setDxGrid(msg.dxGrid);
                         changed = true;
                     }
                     if (changed) $scope.drawMap();
