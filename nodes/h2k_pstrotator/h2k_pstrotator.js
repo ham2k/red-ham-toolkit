@@ -5,7 +5,7 @@ module.exports = function (RED) {
         RED.nodes.createNode(this, config);
         var node = this;
 
-        var host = (config.host || '127.0.0.1').trim();
+        var host = (config.host || '').trim();
         var port = parseInt(config.port, 10) || 12000;
         var pollInterval = parseInt(config.pollInterval, 10);
         if (!isFinite(pollInterval) || pollInterval < 0) pollInterval = 1000;
@@ -13,6 +13,7 @@ module.exports = function (RED) {
 
         var socket = null;
         var pollTimer = null;
+        var dynamicHost = null;  // set from rinfo when host is not configured
 
         // Movement detection state
         var lastAz = null;
@@ -38,8 +39,10 @@ module.exports = function (RED) {
 
         function sendCmd(msg) {
             if (!socket) return;
+            var dest = host || dynamicHost;
+            if (!dest) return;
             var buf = Buffer.from(msg, 'ascii');
-            socket.send(buf, 0, buf.length, port, host, function (err) {
+            socket.send(buf, 0, buf.length, port, dest, function (err) {
                 if (err) node.error('UDP send error: ' + err.message);
             });
         }
@@ -58,7 +61,11 @@ module.exports = function (RED) {
             node.status({ fill: 'red', shape: 'ring', text: err.message });
         });
 
-        socket.on('message', function (msg) {
+        socket.on('message', function (msg, rinfo) {
+            if (!host && !dynamicHost) {
+                dynamicHost = rinfo.address;
+                node.status({ fill: 'yellow', shape: 'ring', text: 'source: ' + dynamicHost });
+            }
             var lines = msg.toString('ascii').replace(/\r/g, '\n').split('\n');
             lines.forEach(function (line) {
                 line = line.trim();
