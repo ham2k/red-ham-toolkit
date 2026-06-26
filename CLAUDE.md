@@ -14,6 +14,7 @@ The package is designed to host **multiple** nodes. Each node lives in its own f
 | `h2k_parse_callsign` | [`nodes/h2k_parse_callsign/`](nodes/h2k_parse_callsign/README.md) | Parse a ham radio callsign into its component parts (prefix, digit, indicators, etc.) |
 | `h2k_annotate_callsign` | [`nodes/h2k_annotate_callsign/`](nodes/h2k_annotate_callsign/README.md) | Annotate a callsign with DXCC entity data (country, CQ zone, ITU zone, continent); auto-parses if needed |
 | `h2k_wsjtx_listener` | [`nodes/h2k_wsjtx_listener/`](nodes/h2k_wsjtx_listener/README.md) | WSJT-X UDP bridge: receive decoded spots, status and QSO events; send halt/reply/free-text commands |
+| `h2k_qrz_lookup` | [`nodes/h2k_qrz_lookup/`](nodes/h2k_qrz_lookup/README.md) | QRZ.com XML API lookup: fetch detailed callsign data (name, address, grid, DXCC, zones, image) |
 
 See each node's `README.md` for its parameters, inputs/outputs, behaviour, and node-specific
 notes.

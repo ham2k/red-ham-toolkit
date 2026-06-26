@@ -953,7 +953,7 @@ module.exports = function (RED) {
                             var dxXY = projection([dxLatLon[1], dxLatLon[0]]);
                             if (dxXY) {
                                 dxG.append('circle')
-                                    .attr('cx', dxXY[0]).attr('cy', dxXY[1]).attr('r', 4)
+                                    .attr('cx', dxXY[0]).attr('cy', dxXY[1]).attr('r', 8)
                                     .style('fill', C.dxDot)
                                     .style('fill-opacity', dxOpacity)
                                     .style('stroke', '#000')
