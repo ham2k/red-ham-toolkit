@@ -28,15 +28,18 @@
     <div class="form-row">
         <label><i class="fa fa-filter"></i> Emit topics</label>
         <div style="display:inline-grid;grid-template-columns:repeat(2,15em);row-gap:4px;">
-            <label style="font-weight:normal;white-space:nowrap;"><input type="checkbox" id="node-input-emitDecode"     style="width:auto;margin-right:6px;"> Decode</label>
-            <label style="font-weight:normal;white-space:nowrap;"><input type="checkbox" id="node-input-emitStatus"     style="width:auto;margin-right:6px;"> Status</label>
-            <label style="font-weight:normal;white-space:nowrap;"><input type="checkbox" id="node-input-emitQsoLogged"  style="width:auto;margin-right:6px;"> QSO Logged</label>
-            <label style="font-weight:normal;white-space:nowrap;"><input type="checkbox" id="node-input-emitLoggedAdif" style="width:auto;margin-right:6px;"> Logged ADIF</label>
-            <label style="font-weight:normal;white-space:nowrap;"><input type="checkbox" id="node-input-emitWsprDecode" style="width:auto;margin-right:6px;"> WSPR Decode</label>
-            <label style="font-weight:normal;white-space:nowrap;"><input type="checkbox" id="node-input-emitHeartbeat"  style="width:auto;margin-right:6px;"> Heartbeat</label>
-            <label style="font-weight:normal;white-space:nowrap;"><input type="checkbox" id="node-input-emitClear"       style="width:auto;margin-right:6px;"> Clear</label>
-            <label style="font-weight:normal;white-space:nowrap;"><input type="checkbox" id="node-input-emitClose"       style="width:auto;margin-right:6px;"> Close</label>
-            <label style="font-weight:normal;white-space:nowrap;"><input type="checkbox" id="node-input-emitTargetCall"  style="width:auto;margin-right:6px;"> Target Call</label>
+            <label style="font-weight:normal;white-space:nowrap;display:flex;align-items:center;"><input type="checkbox" id="node-input-emitDecode"     style="width:auto;margin-right:6px;vertical-align:middle;"> Decode</label>
+            <label style="font-weight:normal;white-space:nowrap;display:flex;align-items:center;"><input type="checkbox" id="node-input-emitStatus"     style="width:auto;margin-right:6px;vertical-align:middle;"> Status</label>
+            <label style="font-weight:normal;white-space:nowrap;display:flex;align-items:center;"><input type="checkbox" id="node-input-emitQsoLogged"  style="width:auto;margin-right:6px;vertical-align:middle;"> QSO Logged</label>
+            <label style="font-weight:normal;white-space:nowrap;display:flex;align-items:center;"><input type="checkbox" id="node-input-emitLoggedAdif" style="width:auto;margin-right:6px;vertical-align:middle;"> Logged ADIF</label>
+            <label style="font-weight:normal;white-space:nowrap;display:flex;align-items:center;"><input type="checkbox" id="node-input-emitWsprDecode" style="width:auto;margin-right:6px;vertical-align:middle;"> WSPR Decode</label>
+            <label style="font-weight:normal;white-space:nowrap;display:flex;align-items:center;"><input type="checkbox" id="node-input-emitHeartbeat"  style="width:auto;margin-right:6px;vertical-align:middle;"> Heartbeat</label>
+            <label style="font-weight:normal;white-space:nowrap;display:flex;align-items:center;"><input type="checkbox" id="node-input-emitClear"       style="width:auto;margin-right:6px;vertical-align:middle;"> Clear</label>
+            <label style="font-weight:normal;white-space:nowrap;display:flex;align-items:center;"><input type="checkbox" id="node-input-emitClose"       style="width:auto;margin-right:6px;vertical-align:middle;"> Close</label>
+            <div style="grid-column:1/-1;border-top:1px solid #ddd;margin:4px 0;"></div>
+            <label style="font-weight:normal;white-space:nowrap;display:flex;align-items:center;"><input type="checkbox" id="node-input-emitDxCall"      style="width:auto;margin-right:6px;vertical-align:middle;"> DX Call</label>
+            <label style="font-weight:normal;white-space:nowrap;display:flex;align-items:center;"><input type="checkbox" id="node-input-emitDxGrid"      style="width:auto;margin-right:6px;vertical-align:middle;"> DX Grid</label>
+            <label style="font-weight:normal;white-space:nowrap;display:flex;align-items:center;"><input type="checkbox" id="node-input-emitDxInfo"      style="width:auto;margin-right:6px;vertical-align:middle;"> DX Info</label>
         </div>
     </div>
     <hr/>
@@ -113,6 +116,20 @@
 
         <dt>topic: <code>"logged_adif"</code></dt>
         <dd>Raw ADIF string for a logged QSO. Payload: <code>id</code>, <code>adif</code>.</dd>
+
+        <dt>topic: <code>"dxCall"</code></dt>
+        <dd>Emitted when WSJT-X selects a new DX callsign (i.e. <code>dxCall</code> changes in a
+            status message). Payload: the callsign string, e.g. <code>"KI2D"</code>.</dd>
+
+        <dt>topic: <code>"dxGrid"</code></dt>
+        <dd>Emitted together with <code>dxCall</code>. Payload: the Maidenhead grid looked up from
+            the most recent decode in the last 5 minutes where that callsign announced their
+            locator, e.g. <code>"FN20"</code>. Empty string if unknown. Feeds directly into
+            <code>ui_h2k_rotator</code>'s <code>dxGrid</code> input.</dd>
+
+        <dt>topic: <code>"dxInfo"</code></dt>
+        <dd>Emitted together with <code>dxCall</code>. Payload: <code>{ call, grid }</code>
+            combining both fields in one message.</dd>
     </dl>
 
     <h3>Inputs</h3>
@@ -167,7 +184,9 @@
             emitHeartbeat:  { value: true },
             emitClear:      { value: true },
             emitClose:      { value: true },
-            emitTargetCall: { value: true }
+            emitDxCall:     { value: true },
+            emitDxGrid:     { value: true },
+            emitDxInfo:     { value: true }
         },
         inputs:  1,
         outputs: 1,

@@ -325,7 +325,9 @@ module.exports = function (RED) {
             'heartbeat':   config.emitHeartbeat   !== false,
             'clear':       config.emitClear       !== false,
             'close':       config.emitClose       !== false,
-            'targetCall':  config.emitTargetCall  !== false
+            'dxCall':      config.emitDxCall      !== false,
+            'dxGrid':      config.emitDxGrid      !== false,
+            'dxInfo':      config.emitDxInfo      !== false
         };
 
         // Grid cache: callsign → { grid, ts } for the last 5 minutes of decodes
@@ -372,13 +374,16 @@ module.exports = function (RED) {
 
             if (result.topic === 'status') {
                 var newDxCall = result.payload.dxCall || '';
-                if (newDxCall !== (lastDxCall || '') ) {
+                if (newDxCall !== (lastDxCall || '')) {
                     lastDxCall = newDxCall || null;
-                    if (newDxCall && topicFilter['targetCall'] !== false) {
-                        node.send({
-                            topic: 'targetCall',
-                            payload: { dxCall: newDxCall, dxGrid: lookupGrid(newDxCall) }
-                        });
+                    if (newDxCall) {
+                        var dxGrid = lookupGrid(newDxCall);
+                        if (topicFilter['dxCall'] !== false)
+                            node.send({ topic: 'dxCall', payload: newDxCall });
+                        if (topicFilter['dxGrid'] !== false)
+                            node.send({ topic: 'dxGrid', payload: dxGrid });
+                        if (topicFilter['dxInfo'] !== false)
+                            node.send({ topic: 'dxInfo', payload: { call: newDxCall, grid: dxGrid } });
                     }
                 }
             }
